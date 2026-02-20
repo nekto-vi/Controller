@@ -1,0 +1,14 @@
+<resources>
+    <style name="Base.Theme.EV" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Основная тема -->
+    </style>
+
+    <style name="Theme.EV" parent="Base.Theme.EV" />
+
+    <style name="Theme.AppSplash" parent="Theme.EV">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@drawable/splash_background</item>
+    </style>
+</resources>

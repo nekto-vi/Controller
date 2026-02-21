@@ -1,5 +1,6 @@
 package com.example.ev
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -25,24 +26,14 @@ class SettingsFragment : Fragment() {
 
         updateCheckBoxes(englishCheckBox, russianCheckBox)
 
-        englishCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                russianCheckBox.setOnCheckedChangeListener(null)
-                russianCheckBox.isChecked = false
-
-                setRussianCheckBoxListener(russianCheckBox, englishCheckBox)
-
+        englishCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && LocaleHelper.getLanguage(requireContext()) != "en") {
                 changeLanguage("en")
             }
         }
 
-        russianCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                englishCheckBox.setOnCheckedChangeListener(null)
-                englishCheckBox.isChecked = false
-
-                setEnglishCheckBoxListener(englishCheckBox, russianCheckBox)
-
+        russianCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && LocaleHelper.getLanguage(requireContext()) != "ru") {
                 changeLanguage("ru")
             }
         }
@@ -65,44 +56,39 @@ class SettingsFragment : Fragment() {
             }
         }
 
-        setEnglishCheckBoxListener(englishCheckBox, russianCheckBox)
-        setRussianCheckBoxListener(russianCheckBox, englishCheckBox)
+        setupListeners(englishCheckBox, russianCheckBox)
     }
 
-    private fun setEnglishCheckBoxListener(englishCheckBox: CheckBox, russianCheckBox: CheckBox) {
-        englishCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                russianCheckBox.setOnCheckedChangeListener(null)
+    private fun setupListeners(englishCheckBox: CheckBox, russianCheckBox: CheckBox) {
+        englishCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && LocaleHelper.getLanguage(requireContext()) != "en") {
                 russianCheckBox.isChecked = false
-                setRussianCheckBoxListener(russianCheckBox, englishCheckBox)
                 changeLanguage("en")
             }
         }
-    }
 
-    private fun setRussianCheckBoxListener(russianCheckBox: CheckBox, englishCheckBox: CheckBox) {
-        russianCheckBox.setOnCheckedChangeListener { buttonView, isChecked ->
-            if (isChecked) {
-                englishCheckBox.setOnCheckedChangeListener(null)
+        russianCheckBox.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked && LocaleHelper.getLanguage(requireContext()) != "ru") {
                 englishCheckBox.isChecked = false
-                setEnglishCheckBoxListener(englishCheckBox, russianCheckBox)
                 changeLanguage("ru")
             }
         }
     }
 
     private fun changeLanguage(languageCode: String) {
-        val currentLanguage = LocaleHelper.getLanguage(requireContext())
-        if (currentLanguage == languageCode) {
-            return
-        }
-
         LocaleHelper.setLocale(requireContext(), languageCode)
 
         val message = if (languageCode == "en") "Language changed to English" else "Язык изменен на Русский"
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
 
-        requireActivity().recreate()
+        val intent = Intent(requireContext(), MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+        intent.putExtra("destination", R.id.settings) // Возвращаемся на настройки
+        startActivity(intent)
+
+        requireActivity().overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+
+        requireActivity().finish()
     }
 
     override fun onResume() {

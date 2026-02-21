@@ -17,10 +17,12 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        // Применяем сохраненный язык перед созданием представления
-        LocaleHelper.applyLanguage(this)
+    override fun attachBaseContext(newBase: Context) {
+        val context = LocaleHelper.updateLocale(newBase)
+        super.attachBaseContext(context)
+    }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -38,9 +40,15 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        val destinationId = intent.getIntExtra("destination", R.id.home)
+
         if (savedInstanceState == null) {
-            replaceFragment(HomeFragment())
-            binding.bottomNavigationView.selectedItemId = R.id.home
+            val fragment = when (destinationId) {
+                R.id.settings -> SettingsFragment()
+                else -> HomeFragment()
+            }
+            replaceFragment(fragment)
+            binding.bottomNavigationView.selectedItemId = destinationId
         }
 
         binding.bottomNavigationView.setOnItemSelectedListener { item ->
@@ -62,18 +70,5 @@ class MainActivity : AppCompatActivity() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.frame_layout, fragment)
             .commit()
-    }
-
-    // Добавьте этот метод для обновления конфигурации при изменении языка
-    override fun attachBaseContext(newBase: Context) {
-        val languageCode = LocaleHelper.getLanguage(newBase)
-        val locale = Locale.forLanguageTag(languageCode)
-        Locale.setDefault(locale)
-
-        val configuration = Configuration(newBase.resources.configuration)
-        configuration.setLocale(locale)
-
-        val context = newBase.createConfigurationContext(configuration)
-        super.attachBaseContext(context)
     }
 }

@@ -2,7 +2,6 @@ package com.example.ev
 
 import android.content.Context
 import android.content.res.Configuration
-import android.content.res.Resources
 import java.util.Locale
 
 object LocaleHelper {
@@ -25,6 +24,11 @@ object LocaleHelper {
         prefs.edit().putString(PREF_LANGUAGE, languageCode).apply()
     }
 
+    fun updateLocale(context: Context): Context {
+        val languageCode = getLanguage(context)
+        return updateResources(context, languageCode)
+    }
+
     private fun updateResources(context: Context, languageCode: String): Context {
         val locale = Locale.forLanguageTag(languageCode)
         Locale.setDefault(locale)
@@ -35,10 +39,4 @@ object LocaleHelper {
 
         return context.createConfigurationContext(configuration)
     }
-
-    fun applyLanguage(context: Context) {
-        val languageCode = getLanguage(context)
-        updateResources(context, languageCode)
-    }
-
 }

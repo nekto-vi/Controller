@@ -7,9 +7,10 @@
     tools:context=".HomeFragment">
 
     <TextView
+        android:id="@+id/homeTextView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="Home Fragment"
+        android:text="@string/home_title"
         android:textSize="20sp"
         android:gravity="center" />
 

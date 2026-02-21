@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Электромобиль</string>
+    <string name="home">Главная</string>
+    <string name="settings">Настройки</string>
+    <string name="language">Язык</string>
+    <string name="english">Английский</string>
+    <string name="russian">Русский</string>
+    <string name="settings_title">Настройки</string>
+    <string name="home_title">Главная</string>
+</resources>

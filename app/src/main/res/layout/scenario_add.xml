@@ -14,17 +14,18 @@
         android:text="Add New Scenario"
         android:textSize="28sp"
         android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginTop="20dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Scenario Name Input -->
     <TextView
         android:id="@+id/nameLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Scenario Name:"
         android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginTop="30dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleTextView" />
@@ -37,19 +38,21 @@
         android:ems="10"
         android:inputType="text"
         android:hint="Enter scenario name"
+        android:textColor="?attr/colorOnSurface"
+        android:textColorHint="?attr/colorOnSurfaceVariant"
+        android:background="?attr/colorSurfaceVariant"
         android:padding="12dp"
-        android:background="@android:drawable/editbox_background"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/nameLabel" />
 
-    <!-- Rooms Selection -->
     <TextView
         android:id="@+id/roomsLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Select Rooms:"
         android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginTop="20dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/scenarioNameInput" />
@@ -60,6 +63,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:padding="8dp"
+        android:background="?attr/colorSurfaceVariant"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/addRoomButton"
         app:layout_constraintTop_toBottomOf="@id/roomsLabel" />
@@ -75,7 +79,6 @@
         app:layout_constraintTop_toTopOf="@id/roomSpinner"
         app:layout_constraintBottom_toBottomOf="@id/roomSpinner" />
 
-    <!-- Selected Rooms List -->
     <TextView
         android:id="@+id/selectedRoomsTitle"
         android:layout_width="wrap_content"
@@ -83,6 +86,7 @@
         android:text="Selected Rooms:"
         android:textSize="14sp"
         android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginTop="16dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/roomSpinner" />
@@ -97,13 +101,13 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/selectedRoomsTitle" />
 
-    <!-- Temperature Selection -->
     <TextView
         android:id="@+id/temperatureLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Temperature:"
         android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface"
         android:layout_marginTop="20dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/selectedRoomsRecyclerView" />
@@ -132,6 +136,7 @@
             android:layout_height="wrap_content"
             android:text="22°C"
             android:textSize="24sp"
+            android:textColor="?attr/colorOnSurface"
             android:layout_marginHorizontal="20dp"
             android:minWidth="80dp"
             android:gravity="center" />
@@ -144,7 +149,6 @@
             android:textSize="24sp" />
     </LinearLayout>
 
-    <!-- Add Button -->
     <Button
         android:id="@+id/addScenarioButton"
         android:layout_width="0dp"

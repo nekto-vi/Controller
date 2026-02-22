@@ -19,7 +19,16 @@
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
 
-    <!-- Room keys (never shown to user, used for storage) -->
+    <!-- Theme -->
+    <string name="theme">Theme</string>
+    <string name="light_theme">Light</string>
+    <string name="dark_theme">Dark</string>
+    <string name="system_theme">System Default</string>
+    <string name="theme_light_applied">Light theme applied</string>
+    <string name="theme_dark_applied">Dark theme applied</string>
+    <string name="theme_system_applied">System theme applied</string>
+
+    <!-- Room keys -->
     <string name="room_living_room" translatable="false">living_room</string>
     <string name="room_bedroom" translatable="false">bedroom</string>
     <string name="room_kitchen" translatable="false">kitchen</string>

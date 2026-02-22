@@ -5,19 +5,18 @@ import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import com.example.ev.databinding.ActivityMainBinding
-import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
     override fun attachBaseContext(newBase: Context) {
+        // Apply theme before super
+        ThemeHelper.updateTheme(newBase)
         val context = LocaleHelper.updateLocale(newBase)
         super.attachBaseContext(context)
     }
@@ -28,9 +27,10 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        window.setBackgroundDrawable(
-            ContextCompat.getColor(this, android.R.color.white).toDrawable()
-        )
+        // УДАЛИТЕ ЭТИ СТРОКИ:
+        // window.setBackgroundDrawable(
+        //     ContextCompat.getColor(this, android.R.color.white).toDrawable()
+        // )
 
         enableEdgeToEdge()
 

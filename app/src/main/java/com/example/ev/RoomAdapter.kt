@@ -7,7 +7,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class RoomAdapter(
-    private val rooms: MutableList<String>,
+    private val items: MutableList<String>, // These are keys
+    private val getDisplayName: (String) -> String, // Function to convert key to display name
     private val onRemoveClick: (String) -> Unit
 ) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
 
@@ -18,17 +19,19 @@ class RoomAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_room, parent, false) // Используем свой layout
+            .inflate(R.layout.item_room, parent, false)
         return RoomViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: RoomViewHolder, position: Int) {
-        val room = rooms[position]
-        holder.roomName.text = room
+        val key = items[position]
+        val displayName = getDisplayName(key)
+
+        holder.roomName.text = displayName
         holder.removeButton.setOnClickListener {
-            onRemoveClick(room)
+            onRemoveClick(key)
         }
     }
 
-    override fun getItemCount() = rooms.size
+    override fun getItemCount() = items.size
 }

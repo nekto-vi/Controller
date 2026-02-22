@@ -18,16 +18,8 @@ class AddScenarioDialog : DialogFragment() {
     private var _binding: ScenarioAddBinding? = null
     private val binding get() = _binding!!
 
-    private val availableRooms by lazy {
-        listOf(
-            getString(R.string.living_room),
-            getString(R.string.bedroom),
-            getString(R.string.kitchen),
-            getString(R.string.bathroom),
-            getString(R.string.hall)
-        )
-    }
-    private val selectedRooms = mutableListOf<String>()
+    private lateinit var roomOptions: List<Pair<String, String>> // key to displayName
+    private val selectedRoomKeys = mutableListOf<String>() // Store keys, not display names
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
 
@@ -53,6 +45,8 @@ class AddScenarioDialog : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        roomOptions = RoomMapper.getAvailableRooms(requireContext())
+
         setupRoomSpinner()
         setupSelectedRoomsRecyclerView()
         setupTemperatureControls()
@@ -74,20 +68,25 @@ class AddScenarioDialog : DialogFragment() {
     }
 
     private fun setupRoomSpinner() {
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, availableRooms)
+        val displayNames = roomOptions.map { it.second }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, displayNames)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.roomSpinner.adapter = adapter
     }
 
     private fun setupSelectedRoomsRecyclerView() {
-        roomAdapter = RoomAdapter(selectedRooms) { roomToRemove ->
-            val position = selectedRooms.indexOf(roomToRemove)
-            if (position != -1) {
-                selectedRooms.removeAt(position)
-                roomAdapter.notifyItemRemoved(position)
-                updateEmptyState()
+        roomAdapter = RoomAdapter(
+            items = selectedRoomKeys,
+            getDisplayName = { key -> RoomMapper.keyToDisplayName(requireContext(), key) },
+            onRemoveClick = { keyToRemove ->
+                val position = selectedRoomKeys.indexOf(keyToRemove)
+                if (position != -1) {
+                    selectedRoomKeys.removeAt(position)
+                    roomAdapter.notifyItemRemoved(position)
+                    updateEmptyState()
+                }
             }
-        }
+        )
 
         binding.selectedRoomsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.selectedRoomsRecyclerView.adapter = roomAdapter
@@ -119,22 +118,17 @@ class AddScenarioDialog : DialogFragment() {
         binding.addRoomButton.setOnClickListener {
             hideKeyboard()
 
-            val selectedItem = binding.roomSpinner.selectedItem
-            if (selectedItem == null) {
+            val selectedPosition = binding.roomSpinner.selectedItemPosition
+            if (selectedPosition < 0 || selectedPosition >= roomOptions.size) {
                 Toast.makeText(requireContext(), getString(R.string.select_room_first), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            val selectedRoom = selectedItem.toString()
+            val selectedKey = roomOptions[selectedPosition].first
 
-            if (selectedRoom.isBlank()) {
-                Toast.makeText(requireContext(), getString(R.string.invalid_selection), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            if (!selectedRooms.contains(selectedRoom)) {
-                selectedRooms.add(selectedRoom)
-                roomAdapter.notifyItemInserted(selectedRooms.size - 1)
+            if (!selectedRoomKeys.contains(selectedKey)) {
+                selectedRoomKeys.add(selectedKey)
+                roomAdapter.notifyItemInserted(selectedRoomKeys.size - 1)
                 updateEmptyState()
                 binding.roomSpinner.setSelection(0)
             } else {
@@ -151,13 +145,13 @@ class AddScenarioDialog : DialogFragment() {
                 scenarioName.isEmpty() -> {
                     Toast.makeText(requireContext(), getString(R.string.enter_scenario_name), Toast.LENGTH_SHORT).show()
                 }
-                selectedRooms.isEmpty() -> {
+                selectedRoomKeys.isEmpty() -> {
                     Toast.makeText(requireContext(), getString(R.string.select_at_least_one_room), Toast.LENGTH_SHORT).show()
                 }
                 else -> {
                     val scenario = Scenario(
                         name = scenarioName,
-                        rooms = selectedRooms.toList(),
+                        rooms = selectedRoomKeys.toList(), // Save keys, not display names
                         temperature = currentTemperature
                     )
 
@@ -187,7 +181,7 @@ class AddScenarioDialog : DialogFragment() {
     }
 
     private fun updateEmptyState() {
-        if (selectedRooms.isEmpty()) {
+        if (selectedRoomKeys.isEmpty()) {
             binding.selectedRoomsRecyclerView.visibility = View.GONE
         } else {
             binding.selectedRoomsRecyclerView.visibility = View.VISIBLE

@@ -128,17 +128,16 @@ class HomeFragment : Fragment() {
     }
 
     private fun loadScenarios() {
-        // Load from SharedPreferences
         val prefs = requireContext().getSharedPreferences("scenarios", android.content.Context.MODE_PRIVATE)
         val savedScenarios = prefs.getStringSet("scenario_ids", setOf()) ?: setOf()
 
         scenarios.clear()
         for (id in savedScenarios) {
             val name = prefs.getString("scenario_${id}_name", "") ?: ""
-            val rooms = prefs.getStringSet("scenario_${id}_rooms", setOf())?.toList() ?: listOf()
+            val roomKeys = prefs.getStringSet("scenario_${id}_rooms", setOf())?.toList() ?: listOf()
             val temp = prefs.getInt("scenario_${id}_temp", 22)
             if (name.isNotEmpty()) {
-                scenarios.add(Scenario(id = id.toLong(), name = name, rooms = rooms, temperature = temp))
+                scenarios.add(Scenario(id = id.toLong(), name = name, rooms = roomKeys, temperature = temp))
             }
         }
 
@@ -150,10 +149,8 @@ class HomeFragment : Fragment() {
         val prefs = requireContext().getSharedPreferences("scenarios", android.content.Context.MODE_PRIVATE)
         val editor = prefs.edit()
 
-        // Clear old data
         editor.clear()
 
-        // Save all scenarios
         val ids = scenarios.map { it.id.toString() }.toSet()
         editor.putStringSet("scenario_ids", ids)
 

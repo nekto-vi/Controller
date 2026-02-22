@@ -38,7 +38,6 @@ class HomeFragment : Fragment() {
 
     private fun setupRecyclerView() {
         scenarioAdapter = ScenarioAdapter(scenarios) { scenario ->
-            // Handle scenario click if needed
         }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -71,13 +70,10 @@ class HomeFragment : Fragment() {
     }
 
     private fun loadScenarios() {
-        // Load from SharedPreferences or database
-        // For now, we'll just update empty state
         updateEmptyState()
     }
 
     private fun saveScenarios() {
-        // Save to SharedPreferences or database
-        // This will be implemented later
+
     }
 }

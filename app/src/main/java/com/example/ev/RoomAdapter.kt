@@ -7,35 +7,28 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class RoomAdapter(
-    private var rooms: MutableList<String>,
+    private val rooms: MutableList<String>,
     private val onRemoveClick: (String) -> Unit
 ) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
 
     class RoomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val roomName: TextView = itemView.findViewById(android.R.id.text1)
-        val removeButton: TextView = itemView.findViewById(android.R.id.button1)
+        val roomName: TextView = itemView.findViewById(R.id.roomNameText)
+        val removeButton: TextView = itemView.findViewById(R.id.removeButton)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(android.R.layout.simple_list_item_2, parent, false)
+            .inflate(R.layout.item_room, parent, false) // Используем свой layout
         return RoomViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: RoomViewHolder, position: Int) {
         val room = rooms[position]
         holder.roomName.text = room
-        holder.removeButton.text = "✕"
         holder.removeButton.setOnClickListener {
             onRemoveClick(room)
         }
     }
 
     override fun getItemCount() = rooms.size
-
-    fun updateRooms(newRooms: List<String>) {
-        rooms.clear()
-        rooms.addAll(newRooms)
-        notifyDataSetChanged()
-    }
 }

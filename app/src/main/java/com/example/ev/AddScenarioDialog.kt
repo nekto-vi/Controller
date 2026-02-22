@@ -50,6 +50,7 @@ class AddScenarioDialog : DialogFragment() {
         setupTemperatureControls()
         setupButtons()
         setupKeyboardHiding()
+        updateEmptyState()
     }
 
     private fun setupRoomSpinner() {
@@ -60,9 +61,12 @@ class AddScenarioDialog : DialogFragment() {
 
     private fun setupSelectedRoomsRecyclerView() {
         roomAdapter = RoomAdapter(selectedRooms) { roomToRemove ->
-            selectedRooms.remove(roomToRemove)
-            roomAdapter.updateRooms(selectedRooms)
-            updateEmptyState()
+            val position = selectedRooms.indexOf(roomToRemove)
+            if (position != -1) {
+                selectedRooms.removeAt(position)
+                roomAdapter.notifyItemRemoved(position)
+                updateEmptyState()
+            }
         }
 
         binding.selectedRoomsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -95,7 +99,6 @@ class AddScenarioDialog : DialogFragment() {
         binding.addRoomButton.setOnClickListener {
             hideKeyboard()
 
-            // Проверка на null и пустоту
             val selectedItem = binding.roomSpinner.selectedItem
             if (selectedItem == null) {
                 Toast.makeText(requireContext(), "Please select a room first", Toast.LENGTH_SHORT).show()
@@ -111,9 +114,8 @@ class AddScenarioDialog : DialogFragment() {
 
             if (!selectedRooms.contains(selectedRoom)) {
                 selectedRooms.add(selectedRoom)
-                roomAdapter.updateRooms(selectedRooms)
+                roomAdapter.notifyItemInserted(selectedRooms.size - 1)
                 updateEmptyState()
-                // Сброс спиннера на первую позицию
                 binding.roomSpinner.setSelection(0)
             } else {
                 Toast.makeText(requireContext(), "Room already selected", Toast.LENGTH_SHORT).show()
@@ -147,12 +149,10 @@ class AddScenarioDialog : DialogFragment() {
     }
 
     private fun setupKeyboardHiding() {
-        // Скрытие клавиатуры при тапе на корневой layout
         binding.root.setOnClickListener {
             hideKeyboard()
         }
 
-        // Скрытие клавиатуры при тапе на пустое место в RecyclerView
         binding.selectedRoomsRecyclerView.setOnTouchListener { _, _ ->
             hideKeyboard()
             false
@@ -163,15 +163,12 @@ class AddScenarioDialog : DialogFragment() {
         val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
         val view = activity?.currentFocus ?: binding.root
         imm.hideSoftInputFromWindow(view.windowToken, 0)
-        // Убираем фокус с EditText
         binding.scenarioNameInput.clearFocus()
     }
 
     private fun updateEmptyState() {
-        // Показываем/скрываем сообщение о пустом списке комнат
         if (selectedRooms.isEmpty()) {
             binding.selectedRoomsRecyclerView.visibility = View.GONE
-            // Можно добавить TextView для empty state в layout если нужно
         } else {
             binding.selectedRoomsRecyclerView.visibility = View.VISIBLE
         }

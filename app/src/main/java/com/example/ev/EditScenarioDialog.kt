@@ -13,11 +13,12 @@ import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ev.databinding.ScenarioAddBinding
 
-class AddScenarioDialog : DialogFragment() {
+class EditScenarioDialog : DialogFragment() {
 
     private var _binding: ScenarioAddBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var scenario: Scenario
     private val availableRooms by lazy {
         listOf(
             getString(R.string.living_room),
@@ -31,13 +32,18 @@ class AddScenarioDialog : DialogFragment() {
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
 
-    interface OnScenarioAddedListener {
-        fun onScenarioAdded(scenario: Scenario)
+    interface OnScenarioEditedListener {
+        fun onScenarioEdited(scenario: Scenario)
+        fun onScenarioDeleted(scenario: Scenario)
     }
 
-    private var listener: OnScenarioAddedListener? = null
+    private var listener: OnScenarioEditedListener? = null
 
-    fun setOnScenarioAddedListener(listener: OnScenarioAddedListener) {
+    fun setScenario(scenario: Scenario) {
+        this.scenario = scenario
+    }
+
+    fun setOnScenarioEditedListener(listener: OnScenarioEditedListener) {
         this.listener = listener
     }
 
@@ -53,6 +59,7 @@ class AddScenarioDialog : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        loadScenarioData()
         setupRoomSpinner()
         setupSelectedRoomsRecyclerView()
         setupTemperatureControls()
@@ -62,15 +69,22 @@ class AddScenarioDialog : DialogFragment() {
         updateLocalizedTexts()
     }
 
+    private fun loadScenarioData() {
+        binding.scenarioNameInput.setText(scenario.name)
+        selectedRooms.clear()
+        selectedRooms.addAll(scenario.rooms)
+        currentTemperature = scenario.temperature
+    }
+
     private fun updateLocalizedTexts() {
-        binding.titleTextView.text = getString(R.string.add_scenario)
+        binding.titleTextView.text = getString(R.string.edit_scenario)
         binding.nameLabel.text = getString(R.string.scenario_name)
         binding.scenarioNameInput.hint = getString(R.string.scenario_name)
         binding.roomsLabel.text = getString(R.string.select_rooms)
         binding.selectedRoomsTitle.text = getString(R.string.selected_rooms)
         binding.temperatureLabel.text = getString(R.string.temperature)
         binding.addRoomButton.text = getString(R.string.add)
-        binding.addScenarioButton.text = getString(R.string.add_scenario)
+        binding.addScenarioButton.text = getString(R.string.save)
     }
 
     private fun setupRoomSpinner() {
@@ -155,13 +169,13 @@ class AddScenarioDialog : DialogFragment() {
                     Toast.makeText(requireContext(), getString(R.string.select_at_least_one_room), Toast.LENGTH_SHORT).show()
                 }
                 else -> {
-                    val scenario = Scenario(
+                    val updatedScenario = scenario.copy(
                         name = scenarioName,
                         rooms = selectedRooms.toList(),
                         temperature = currentTemperature
                     )
 
-                    listener?.onScenarioAdded(scenario)
+                    listener?.onScenarioEdited(updatedScenario)
                     dismiss()
                 }
             }

@@ -6,6 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -38,6 +40,7 @@ class HomeFragment : Fragment() {
 
     private fun setupRecyclerView() {
         scenarioAdapter = ScenarioAdapter(scenarios) { scenario ->
+            showEditScenarioDialog(scenario)
         }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -50,7 +53,7 @@ class HomeFragment : Fragment() {
             dialog.setOnScenarioAddedListener(object : AddScenarioDialog.OnScenarioAddedListener {
                 override fun onScenarioAdded(scenario: Scenario) {
                     scenarios.add(scenario)
-                    scenarioAdapter.updateScenarios(scenarios)
+                    scenarioAdapter.updateScenarios(scenarios.toList())
                     saveScenarios()
                     updateEmptyState()
                 }
@@ -59,10 +62,65 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun showEditScenarioDialog(scenario: Scenario) {
+        val options = arrayOf(
+            getString(R.string.edit),
+            getString(R.string.delete),
+            getString(R.string.cancel)
+        )
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(scenario.name)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> editScenario(scenario)
+                    1 -> deleteScenario(scenario)
+                }
+            }
+            .show()
+    }
+
+    private fun editScenario(scenario: Scenario) {
+        val dialog = EditScenarioDialog()
+        dialog.setScenario(scenario)
+        dialog.setOnScenarioEditedListener(object : EditScenarioDialog.OnScenarioEditedListener {
+            override fun onScenarioEdited(updatedScenario: Scenario) {
+                val position = scenarios.indexOfFirst { it.id == updatedScenario.id }
+                if (position != -1) {
+                    scenarios[position] = updatedScenario
+                    scenarioAdapter.updateScenarios(scenarios.toList())
+                    saveScenarios()
+                    Toast.makeText(requireContext(), getString(R.string.scenario_updated), Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onScenarioDeleted(scenario: Scenario) {
+                // Not used here
+            }
+        })
+        dialog.show(parentFragmentManager, "EditScenarioDialog")
+    }
+
+    private fun deleteScenario(scenario: Scenario) {
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.delete_scenario_title))
+            .setMessage(getString(R.string.delete_scenario_message, scenario.name))
+            .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                scenarios.removeAll { it.id == scenario.id }
+                scenarioAdapter.updateScenarios(scenarios.toList())
+                saveScenarios()
+                updateEmptyState()
+                Toast.makeText(requireContext(), getString(R.string.scenario_deleted), Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
     private fun updateEmptyState() {
         if (scenarios.isEmpty()) {
             recyclerView.visibility = View.GONE
             emptyStateText.visibility = View.VISIBLE
+            emptyStateText.text = getString(R.string.no_scenarios_yet)
         } else {
             recyclerView.visibility = View.VISIBLE
             emptyStateText.visibility = View.GONE
@@ -70,10 +128,41 @@ class HomeFragment : Fragment() {
     }
 
     private fun loadScenarios() {
+        // Load from SharedPreferences
+        val prefs = requireContext().getSharedPreferences("scenarios", android.content.Context.MODE_PRIVATE)
+        val savedScenarios = prefs.getStringSet("scenario_ids", setOf()) ?: setOf()
+
+        scenarios.clear()
+        for (id in savedScenarios) {
+            val name = prefs.getString("scenario_${id}_name", "") ?: ""
+            val rooms = prefs.getStringSet("scenario_${id}_rooms", setOf())?.toList() ?: listOf()
+            val temp = prefs.getInt("scenario_${id}_temp", 22)
+            if (name.isNotEmpty()) {
+                scenarios.add(Scenario(id = id.toLong(), name = name, rooms = rooms, temperature = temp))
+            }
+        }
+
+        scenarioAdapter.updateScenarios(scenarios.toList())
         updateEmptyState()
     }
 
     private fun saveScenarios() {
+        val prefs = requireContext().getSharedPreferences("scenarios", android.content.Context.MODE_PRIVATE)
+        val editor = prefs.edit()
 
+        // Clear old data
+        editor.clear()
+
+        // Save all scenarios
+        val ids = scenarios.map { it.id.toString() }.toSet()
+        editor.putStringSet("scenario_ids", ids)
+
+        for (scenario in scenarios) {
+            editor.putString("scenario_${scenario.id}_name", scenario.name)
+            editor.putStringSet("scenario_${scenario.id}_rooms", scenario.rooms.toSet())
+            editor.putInt("scenario_${scenario.id}_temp", scenario.temperature)
+        }
+
+        editor.apply()
     }
 }

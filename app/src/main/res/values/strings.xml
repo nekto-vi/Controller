@@ -8,14 +8,31 @@
     <string name="settings_title">Settings</string>
     <string name="home_title">Home</string>
     <string name="add_scenario">Add Scenario</string>
+    <string name="edit_scenario">Edit Scenario</string>
     <string name="scenario_name">Scenario Name</string>
     <string name="select_rooms">Select Rooms</string>
+    <string name="selected_rooms">Selected Rooms:</string>
     <string name="temperature">Temperature</string>
     <string name="add">Add</string>
+    <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
     <string name="living_room">Living Room</string>
     <string name="bedroom">Bedroom</string>
     <string name="kitchen">Kitchen</string>
     <string name="bathroom">Bathroom</string>
     <string name="hall">Hall</string>
+
+    <!-- Toast messages -->
+    <string name="select_room_first">Please select a room first</string>
+    <string name="invalid_selection">Invalid room selection</string>
+    <string name="room_already_selected">Room already selected</string>
+    <string name="enter_scenario_name">Please enter scenario name</string>
+    <string name="select_at_least_one_room">Please select at least one room</string>
+    <string name="scenario_updated">Scenario updated</string>
+    <string name="scenario_deleted">Scenario deleted</string>
+    <string name="delete_scenario_title">Delete Scenario</string>
+    <string name="delete_scenario_message">Are you sure you want to delete "%s"?</string>
+    <string name="no_scenarios_yet">No scenarios yet.\nTap the button below to add your first scenario!</string>
 </resources>

@@ -26,7 +26,6 @@ class ScenarioAdapter(
         val scenario = scenarios[position]
         holder.nameText.text = scenario.name
 
-        // Convert room keys to localized display names
         val context = holder.itemView.context
         val roomNames = scenario.rooms.map { roomKey ->
             RoomMapper.keyToDisplayName(context, roomKey)

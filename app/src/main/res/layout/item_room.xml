@@ -6,7 +6,7 @@
     android:orientation="horizontal"
     android:padding="16dp"
     android:gravity="center_vertical"
-    android:background="?attr/colorSurface">  <!-- Фон из темы -->
+    android:background="?attr/colorSurface">
 
     <TextView
         android:id="@+id/roomNameText"
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textSize="16sp"
-        android:textColor="?attr/colorOnSurface" />  <!-- Цвет текста из темы -->
+        android:textColor="?attr/colorOnSurface" />
 
     <TextView
         android:id="@+id/removeButton"
@@ -23,6 +23,6 @@
         android:text="✕"
         android:textSize="20sp"
         android:padding="8dp"
-        android:textColor="?attr/colorError" />  <!-- Цвет ошибки/удаления из темы -->
+        android:textColor="?attr/colorError" />
 
 </LinearLayout>

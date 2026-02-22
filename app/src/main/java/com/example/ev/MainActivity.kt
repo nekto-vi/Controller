@@ -15,7 +15,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
     override fun attachBaseContext(newBase: Context) {
-        // Apply theme before super
         ThemeHelper.updateTheme(newBase)
         val context = LocaleHelper.updateLocale(newBase)
         super.attachBaseContext(context)
@@ -26,11 +25,6 @@ class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // УДАЛИТЕ ЭТИ СТРОКИ:
-        // window.setBackgroundDrawable(
-        //     ContextCompat.getColor(this, android.R.color.white).toDrawable()
-        // )
 
         enableEdgeToEdge()
 

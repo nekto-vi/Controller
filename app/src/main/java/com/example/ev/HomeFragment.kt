@@ -95,7 +95,6 @@ class HomeFragment : Fragment() {
             }
 
             override fun onScenarioDeleted(scenario: Scenario) {
-                // Not used here
             }
         })
         dialog.show(parentFragmentManager, "EditScenarioDialog")

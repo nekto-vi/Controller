@@ -18,8 +18,8 @@ class AddScenarioDialog : DialogFragment() {
     private var _binding: ScenarioAddBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var roomOptions: List<Pair<String, String>> // key to displayName
-    private val selectedRoomKeys = mutableListOf<String>() // Store keys, not display names
+    private lateinit var roomOptions: List<Pair<String, String>>
+    private val selectedRoomKeys = mutableListOf<String>()
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
 

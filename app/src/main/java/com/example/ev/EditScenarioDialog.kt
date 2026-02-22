@@ -66,7 +66,7 @@ class EditScenarioDialog : DialogFragment() {
     private fun loadScenarioData() {
         binding.scenarioNameInput.setText(scenario.name)
         selectedRoomKeys.clear()
-        selectedRoomKeys.addAll(scenario.rooms) // These are already keys
+        selectedRoomKeys.addAll(scenario.rooms)
         currentTemperature = scenario.temperature
     }
 

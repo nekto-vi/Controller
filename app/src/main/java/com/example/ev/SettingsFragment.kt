@@ -27,8 +27,6 @@ class SettingsFragment : Fragment() {
         setupThemeSection(view)
     }
 
-    // ==================== LANGUAGE ====================
-
     private fun setupLanguageSection(view: View) {
         val englishCheckBox = view.findViewById<CheckBox>(R.id.EnglishButton)
         val russianCheckBox = view.findViewById<CheckBox>(R.id.RussianButton)
@@ -93,15 +91,12 @@ class SettingsFragment : Fragment() {
         restartActivity()
     }
 
-    // ==================== THEME ====================
-
     private fun setupThemeSection(view: View) {
         val lightRadio = view.findViewById<RadioButton>(R.id.LightButton)
         val darkRadio = view.findViewById<RadioButton>(R.id.DarkButton)
         val systemRadio = view.findViewById<RadioButton>(R.id.SystemButton)
         val themeGroup = view.findViewById<RadioGroup>(R.id.themeRadioGroup)
 
-        // Update UI based on current theme
         when (ThemeHelper.getTheme(requireContext())) {
             "light" -> lightRadio.isChecked = true
             "dark" -> darkRadio.isChecked = true

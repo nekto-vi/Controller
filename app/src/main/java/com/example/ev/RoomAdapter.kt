@@ -7,14 +7,16 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
 class RoomAdapter(
-    private val items: MutableList<String>, // These are keys
-    private val getDisplayName: (String) -> String, // Function to convert key to display name
+    private val items: MutableList<String>,
+    private val getDisplayName: (String) -> String,
     private val onRemoveClick: (String) -> Unit
 ) : RecyclerView.Adapter<RoomAdapter.RoomViewHolder>() {
 
     class RoomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val roomName: TextView = itemView.findViewById(R.id.roomNameText)
+            ?: throw IllegalStateException("roomNameText not found in layout")
         val removeButton: TextView = itemView.findViewById(R.id.removeButton)
+            ?: throw IllegalStateException("removeButton not found in layout")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RoomViewHolder {

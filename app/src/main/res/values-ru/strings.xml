@@ -19,7 +19,16 @@
     <string name="edit">Редактировать</string>
     <string name="delete">Удалить</string>
 
-    <!-- Room keys (never shown to user, used for storage) -->
+    <!-- Theme -->
+    <string name="theme">Тема</string>
+    <string name="light_theme">Светлая</string>
+    <string name="dark_theme">Темная</string>
+    <string name="system_theme">Как в системе</string>
+    <string name="theme_light_applied">Применена светлая тема</string>
+    <string name="theme_dark_applied">Применена темная тема</string>
+    <string name="theme_system_applied">Применена системная тема</string>
+
+    <!-- Room keys -->
     <string name="room_living_room" translatable="false">living_room</string>
     <string name="room_bedroom" translatable="false">bedroom</string>
     <string name="room_kitchen" translatable="false">kitchen</string>

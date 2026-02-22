@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Электромобиль</string>
+    <string name="app_name">Controller</string>
     <string name="home">Главная</string>
     <string name="settings">Настройки</string>
     <string name="language">Язык</string>
@@ -8,14 +8,40 @@
     <string name="settings_title">Настройки</string>
     <string name="home_title">Главная</string>
     <string name="add_scenario">Добавить сценарий</string>
+    <string name="edit_scenario">Редактировать сценарий</string>
     <string name="scenario_name">Название сценария</string>
     <string name="select_rooms">Выберите комнаты</string>
+    <string name="selected_rooms">Выбранные комнаты:</string>
     <string name="temperature">Температура</string>
     <string name="add">Добавить</string>
+    <string name="save">Сохранить</string>
     <string name="cancel">Отмена</string>
+    <string name="edit">Редактировать</string>
+    <string name="delete">Удалить</string>
+
+    <!-- Room keys (never shown to user, used for storage) -->
+    <string name="room_living_room" translatable="false">living_room</string>
+    <string name="room_bedroom" translatable="false">bedroom</string>
+    <string name="room_kitchen" translatable="false">kitchen</string>
+    <string name="room_bathroom" translatable="false">bathroom</string>
+    <string name="room_hall" translatable="false">hall</string>
+
+    <!-- Room display names -->
     <string name="living_room">Гостиная</string>
     <string name="bedroom">Спальня</string>
     <string name="kitchen">Кухня</string>
     <string name="bathroom">Ванная</string>
     <string name="hall">Прихожая</string>
+
+    <!-- Toast messages -->
+    <string name="select_room_first">Сначала выберите комнату</string>
+    <string name="invalid_selection">Некорректный выбор</string>
+    <string name="room_already_selected">Комната уже выбрана</string>
+    <string name="enter_scenario_name">Введите название сценария</string>
+    <string name="select_at_least_one_room">Выберите хотя бы одну комнату</string>
+    <string name="scenario_updated">Сценарий обновлен</string>
+    <string name="scenario_deleted">Сценарий удален</string>
+    <string name="delete_scenario_title">Удалить сценарий</string>
+    <string name="delete_scenario_message">Вы уверены, что хотите удалить "%s"?</string>
+    <string name="no_scenarios_yet">Пока нет сценариев.\nНажмите кнопку ниже, чтобы добавить первый!</string>
 </resources>

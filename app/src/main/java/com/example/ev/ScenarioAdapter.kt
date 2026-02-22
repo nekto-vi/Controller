@@ -25,7 +25,14 @@ class ScenarioAdapter(
     override fun onBindViewHolder(holder: ScenarioViewHolder, position: Int) {
         val scenario = scenarios[position]
         holder.nameText.text = scenario.name
-        holder.detailsText.text = "${scenario.rooms.joinToString()} - ${scenario.temperature}°C"
+
+        // Convert room keys to localized display names
+        val context = holder.itemView.context
+        val roomNames = scenario.rooms.map { roomKey ->
+            RoomMapper.keyToDisplayName(context, roomKey)
+        }
+
+        holder.detailsText.text = "${roomNames.joinToString()} - ${scenario.temperature}°C"
 
         holder.itemView.setOnClickListener {
             onItemClick(scenario)

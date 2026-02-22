@@ -7,4 +7,15 @@
     <string name="russian">Русский</string>
     <string name="settings_title">Настройки</string>
     <string name="home_title">Главная</string>
+    <string name="add_scenario">Добавить сценарий</string>
+    <string name="scenario_name">Название сценария</string>
+    <string name="select_rooms">Выберите комнаты</string>
+    <string name="temperature">Температура</string>
+    <string name="add">Добавить</string>
+    <string name="cancel">Отмена</string>
+    <string name="living_room">Гостиная</string>
+    <string name="bedroom">Спальня</string>
+    <string name="kitchen">Кухня</string>
+    <string name="bathroom">Ванная</string>
+    <string name="hall">Прихожая</string>
 </resources>

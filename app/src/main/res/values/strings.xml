@@ -19,7 +19,6 @@
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
 
-    <!-- Theme -->
     <string name="theme">Theme</string>
     <string name="light_theme">Light</string>
     <string name="dark_theme">Dark</string>
@@ -28,21 +27,18 @@
     <string name="theme_dark_applied">Dark theme applied</string>
     <string name="theme_system_applied">System theme applied</string>
 
-    <!-- Room keys -->
     <string name="room_living_room" translatable="false">living_room</string>
     <string name="room_bedroom" translatable="false">bedroom</string>
     <string name="room_kitchen" translatable="false">kitchen</string>
     <string name="room_bathroom" translatable="false">bathroom</string>
     <string name="room_hall" translatable="false">hall</string>
 
-    <!-- Room display names -->
     <string name="living_room">Living Room</string>
     <string name="bedroom">Bedroom</string>
     <string name="kitchen">Kitchen</string>
     <string name="bathroom">Bathroom</string>
     <string name="hall">Hall</string>
 
-    <!-- Toast messages -->
     <string name="select_room_first">Please select a room first</string>
     <string name="invalid_selection">Invalid room selection</string>
     <string name="room_already_selected">Room already selected</string>

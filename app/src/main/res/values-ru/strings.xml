@@ -19,7 +19,6 @@
     <string name="edit">Редактировать</string>
     <string name="delete">Удалить</string>
 
-    <!-- Theme -->
     <string name="theme">Тема</string>
     <string name="light_theme">Светлая</string>
     <string name="dark_theme">Темная</string>
@@ -28,21 +27,18 @@
     <string name="theme_dark_applied">Применена темная тема</string>
     <string name="theme_system_applied">Применена системная тема</string>
 
-    <!-- Room keys -->
     <string name="room_living_room" translatable="false">living_room</string>
     <string name="room_bedroom" translatable="false">bedroom</string>
     <string name="room_kitchen" translatable="false">kitchen</string>
     <string name="room_bathroom" translatable="false">bathroom</string>
     <string name="room_hall" translatable="false">hall</string>
 
-    <!-- Room display names -->
     <string name="living_room">Гостиная</string>
     <string name="bedroom">Спальня</string>
     <string name="kitchen">Кухня</string>
     <string name="bathroom">Ванная</string>
     <string name="hall">Прихожая</string>
 
-    <!-- Toast messages -->
     <string name="select_room_first">Сначала выберите комнату</string>
     <string name="invalid_selection">Некорректный выбор</string>
     <string name="room_already_selected">Комната уже выбрана</string>

@@ -13,4 +13,13 @@ interface GeocodingApiService {
         @Query("language") language: String = "en",
         @Query("format") format: String = "json"
     ): Response<GeocodingResponse>
+
+    @GET("v1/reverse")
+    suspend fun reverseGeocode(
+        @Query("latitude") latitude: Double,
+        @Query("longitude") longitude: Double,
+        @Query("count") count: Int = 1,
+        @Query("language") language: String = "en",
+        @Query("format") format: String = "json"
+    ): Response<GeocodingResponse>
 }

@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".HomeFragment">
 
     <TextView
@@ -12,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="25dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="28dp"
         android:text="@string/home_title"
         android:textColor="?attr/colorOnSurface"
         android:textSize="24sp"
@@ -40,14 +41,33 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-            <ImageView
+            <TextView
                 android:id="@+id/weatherIcon"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
+                android:gravity="center"
+                android:text="☁️"
+                android:textSize="36sp"
                 android:contentDescription="@string/weather_icon"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/weatherLocationText"
                 app:layout_constraintBottom_toBottomOf="parent" />
+
+            <TextView
+                android:id="@+id/weatherLocationText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="--"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnSurface"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:padding="4dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/weatherDetailsText" />
 
             <TextView
                 android:id="@+id/temperatureText"
@@ -86,10 +106,14 @@
                 android:id="@+id/refreshWeatherButton"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
-                android:text="🔄"
-                android:textSize="16sp"
+                android:text="@string/update_weather_button"
+                android:textSize="12sp"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingTop="0dp"
+                android:paddingBottom="2dp"
                 android:backgroundTint="?attr/colorPrimary"
-                android:paddingHorizontal="12dp"
+                android:paddingHorizontal="8dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/weatherDetailsText"
                 android:layout_marginTop="8dp" />

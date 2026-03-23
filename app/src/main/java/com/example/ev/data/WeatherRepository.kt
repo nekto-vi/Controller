@@ -8,10 +8,21 @@ import com.example.ev.data.weather.OpenMeteoWeatherResponse
 import com.example.ev.network.RetrofitClient
 import com.example.ev.network.GeocodingApiService
 import com.example.ev.network.WeatherApiService
+import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.URL
 
 class WeatherRepository(private val context: Context) {
+    private data class IpLocationResponse(
+        val city: String?,
+        @SerializedName("country_name") val countryName: String?
+    )
+    private data class IpWhoIsResponse(
+        val success: Boolean?,
+        val city: String?,
+        val country: String?
+    )
 
     private val prefs: SharedPreferences = context.getSharedPreferences("weather_cache", Context.MODE_PRIVATE)
     private val apiService: WeatherApiService = RetrofitClient.weatherApiService
@@ -19,21 +30,22 @@ class WeatherRepository(private val context: Context) {
 
     companion object {
         private const val CACHE_DURATION_MS = 30 * 60 * 1000 // 30 минут кэширования
-        private const val DEFAULT_CITY = "Moscow"
+        private const val DEFAULT_CITY = "Minsk"
     }
 
     suspend fun getWeather(city: String = DEFAULT_CITY): Result<WeatherData> {
         return withContext(Dispatchers.IO) {
             try {
+                val languageCode = getLanguageCode()
                 // Проверяем кэш
-                val cachedWeather = getCachedWeather(city)
-                if (cachedWeather != null && !isCacheExpired(city)) {
+                val cachedWeather = getCachedWeather(city, languageCode)
+                if (cachedWeather != null && !isCacheExpired(city, languageCode)) {
                     return@withContext Result.success(cachedWeather)
                 }
 
                 val geocodingResponse = geocodingApiService.searchCity(
                     city = city,
-                    language = getLanguageCode()
+                    language = languageCode
                 )
                 if (!geocodingResponse.isSuccessful) {
                     return@withContext Result.failure(
@@ -53,8 +65,12 @@ class WeatherRepository(private val context: Context) {
                 if (response.isSuccessful) {
                     val weatherResponse = response.body()
                     if (weatherResponse != null) {
-                        val weatherData = mapToWeatherData(weatherResponse, location.name)
-                        saveToCache(city, weatherData)
+                        val cityLabel = listOfNotNull(location.name, location.country).joinToString(", ")
+                        val weatherData = mapToWeatherData(
+                            response = weatherResponse,
+                            cityLabel = cityLabel.ifBlank { location.name }
+                        )
+                        saveToCache(city, languageCode, weatherData)
                         return@withContext Result.success(weatherData)
                     } else {
                         return@withContext Result.failure(Exception("Empty response"))
@@ -64,7 +80,7 @@ class WeatherRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 // Если интернет отсутствует, пробуем вернуть кэш даже если он устарел
-                val cachedWeather = getCachedWeather(city)
+                val cachedWeather = getCachedWeather(city, getLanguageCode())
                 if (cachedWeather != null) {
                     return@withContext Result.success(cachedWeather)
                 }
@@ -73,10 +89,76 @@ class WeatherRepository(private val context: Context) {
         }
     }
 
-    private fun mapToWeatherData(response: OpenMeteoWeatherResponse, cityName: String): WeatherData {
+    suspend fun getWeatherByCoordinates(latitude: Double, longitude: Double): Result<WeatherData> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val weatherResponse = apiService.getCurrentWeather(
+                    latitude = latitude,
+                    longitude = longitude
+                )
+                if (!weatherResponse.isSuccessful) {
+                    return@withContext Result.failure(
+                        Exception("Error: ${weatherResponse.code()} - ${weatherResponse.message()}")
+                    )
+                }
+
+                val weatherBody = weatherResponse.body()
+                    ?: return@withContext Result.failure(Exception("Empty response"))
+
+                val reverseResponse = geocodingApiService.reverseGeocode(
+                    latitude = latitude,
+                    longitude = longitude,
+                    language = getLanguageCode()
+                )
+                val location = reverseResponse.body()?.results?.firstOrNull()
+                val cityLabel = if (location != null) {
+                    listOfNotNull(location.name, location.country).joinToString(", ")
+                } else {
+                    "Current location"
+                }
+
+                return@withContext Result.success(
+                    mapToWeatherData(
+                        response = weatherBody,
+                        cityLabel = cityLabel.ifBlank { "Current location" }
+                    )
+                )
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun getWeatherByIp(): Result<WeatherData> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val gson = com.google.gson.Gson()
+
+                val ipApiJson = URL("https://ipapi.co/json/").readText()
+                val ipApiLocation = gson.fromJson(ipApiJson, IpLocationResponse::class.java)
+                val ipApiCity = ipApiLocation.city?.trim().orEmpty()
+                if (ipApiCity.isNotEmpty()) {
+                    return@withContext getWeather(ipApiCity)
+                }
+
+                val ipWhoIsJson = URL("https://ipwho.is/").readText()
+                val ipWhoIsLocation = gson.fromJson(ipWhoIsJson, IpWhoIsResponse::class.java)
+                val ipWhoIsCity = ipWhoIsLocation.city?.trim().orEmpty()
+                if (ipWhoIsLocation.success == true && ipWhoIsCity.isNotEmpty()) {
+                    return@withContext getWeather(ipWhoIsCity)
+                }
+
+                Result.failure(Exception("City not found from IP providers"))
+            } catch (_: Exception) {
+                Result.failure(Exception("City not found from IP providers"))
+            }
+        }
+    }
+
+    private fun mapToWeatherData(response: OpenMeteoWeatherResponse, cityLabel: String): WeatherData {
         val conditionText = weatherCodeToCondition(response.current.weatherCode)
         return WeatherData(
-            cityName = cityName,
+            cityName = cityLabel,
             temperature = response.current.temperature,
             feelsLike = response.current.feelsLike,
             condition = conditionText,
@@ -88,8 +170,8 @@ class WeatherRepository(private val context: Context) {
         )
     }
 
-    private fun getCachedWeather(city: String): WeatherData? {
-        val cachedJson = prefs.getString("weather_$city", null)
+    private fun getCachedWeather(city: String, language: String): WeatherData? {
+        val cachedJson = prefs.getString("weather_${city}_$language", null)
         if (cachedJson == null) return null
 
         return try {
@@ -100,17 +182,17 @@ class WeatherRepository(private val context: Context) {
         }
     }
 
-    private fun saveToCache(city: String, weatherData: WeatherData) {
+    private fun saveToCache(city: String, language: String, weatherData: WeatherData) {
         val gson = com.google.gson.Gson()
         val json = gson.toJson(weatherData)
         prefs.edit()
-            .putString("weather_$city", json)
-            .putLong("weather_${city}_timestamp", System.currentTimeMillis())
+            .putString("weather_${city}_$language", json)
+            .putLong("weather_${city}_${language}_timestamp", System.currentTimeMillis())
             .apply()
     }
 
-    private fun isCacheExpired(city: String): Boolean {
-        val lastUpdate = prefs.getLong("weather_${city}_timestamp", 0)
+    private fun isCacheExpired(city: String, language: String): Boolean {
+        val lastUpdate = prefs.getLong("weather_${city}_${language}_timestamp", 0)
         return System.currentTimeMillis() - lastUpdate > CACHE_DURATION_MS
     }
 
@@ -122,22 +204,23 @@ class WeatherRepository(private val context: Context) {
     }
 
     private fun weatherCodeToCondition(code: Int): String {
+        val isRu = getLanguageCode() == "ru"
         return when (code) {
-            0 -> "Clear sky"
-            1 -> "Mainly clear"
-            2 -> "Partly cloudy"
-            3 -> "Overcast"
-            45, 48 -> "Fog"
-            51, 53, 55 -> "Drizzle"
-            56, 57 -> "Freezing drizzle"
-            61, 63, 65 -> "Rain"
-            66, 67 -> "Freezing rain"
-            71, 73, 75, 77 -> "Snow"
-            80, 81, 82 -> "Rain showers"
-            85, 86 -> "Snow showers"
-            95 -> "Thunderstorm"
-            96, 99 -> "Thunderstorm with hail"
-            else -> "Unknown"
+            0 -> if (isRu) "Ясно" else "Clear sky"
+            1 -> if (isRu) "Преимущественно ясно" else "Mainly clear"
+            2 -> if (isRu) "Переменная облачность" else "Partly cloudy"
+            3 -> if (isRu) "Пасмурно" else "Overcast"
+            45, 48 -> if (isRu) "Туман" else "Fog"
+            51, 53, 55 -> if (isRu) "Морось" else "Drizzle"
+            56, 57 -> if (isRu) "Ледяная морось" else "Freezing drizzle"
+            61, 63, 65 -> if (isRu) "Дождь" else "Rain"
+            66, 67 -> if (isRu) "Ледяной дождь" else "Freezing rain"
+            71, 73, 75, 77 -> if (isRu) "Снег" else "Snow"
+            80, 81, 82 -> if (isRu) "Ливни" else "Rain showers"
+            85, 86 -> if (isRu) "Снегопад" else "Snow showers"
+            95 -> if (isRu) "Гроза" else "Thunderstorm"
+            96, 99 -> if (isRu) "Гроза с градом" else "Thunderstorm with hail"
+            else -> if (isRu) "Неизвестно" else "Unknown"
         }
     }
 }

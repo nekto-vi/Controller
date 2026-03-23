@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Button
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -21,6 +21,9 @@ import com.example.ev.viewmodel.HomeViewModelFactory
 import java.util.Locale
 
 class HomeFragment : Fragment() {
+    companion object {
+        private const val FALLBACK_CITY = "Minsk"
+    }
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var addScenarioButton: Button
@@ -30,13 +33,16 @@ class HomeFragment : Fragment() {
 
     // Weather UI elements
     private lateinit var weatherContainer: View
-    private lateinit var weatherIcon: ImageView
+    private lateinit var weatherIcon: TextView
+    private lateinit var weatherLocationText: TextView
     private lateinit var temperatureText: TextView
     private lateinit var conditionText: TextView
     private lateinit var weatherDetailsText: TextView
     private lateinit var weatherLoadingText: TextView
     private lateinit var weatherErrorText: TextView
     private lateinit var refreshWeatherButton: Button
+    private var selectedCityOverride: String? = FALLBACK_CITY
+    private var selectedCoordinatesOverride: Pair<Double, Double>? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -52,20 +58,28 @@ class HomeFragment : Fragment() {
         // Weather views
         weatherContainer = view.findViewById(R.id.weatherContainer)
         weatherIcon = view.findViewById(R.id.weatherIcon)
+        weatherLocationText = view.findViewById(R.id.weatherLocationText)
         temperatureText = view.findViewById(R.id.temperatureText)
         conditionText = view.findViewById(R.id.conditionText)
         weatherDetailsText = view.findViewById(R.id.weatherDetailsText)
         weatherLoadingText = view.findViewById(R.id.weatherLoadingText)
         weatherErrorText = view.findViewById(R.id.weatherErrorText)
         refreshWeatherButton = view.findViewById(R.id.refreshWeatherButton)
+        setWeatherPlaceholders()
 
         setupViewModel()
         setupRecyclerView()
         setupObservers()
         setupAddButton()
+        setupLocationPicker()
         setupRefreshButton()
 
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshWeatherForCurrentSelection()
     }
 
     private fun setupViewModel() {
@@ -122,6 +136,12 @@ class HomeFragment : Fragment() {
         weatherLoadingText.isVisible = false
         weatherErrorText.isVisible = false
 
+        val selectedCoordinates = selectedCoordinatesOverride
+        weatherLocationText.text = if (selectedCoordinates != null && !selectedCityOverride.isNullOrBlank()) {
+            selectedCityOverride
+        } else {
+            weather.cityName
+        }
         temperatureText.text = getString(R.string.temperature_format, weather.temperature.toInt())
 
         // Исправляем deprecated capitalize()
@@ -132,35 +152,138 @@ class HomeFragment : Fragment() {
 
         weatherDetailsText.text = getString(R.string.weather_details_format, weather.humidity, weather.windSpeed.toInt())
 
-        // Load weather icon using Glide
-        try {
-            val iconUrl = "https://openweathermap.org/img/wn/${weather.iconCode}@2x.png"
-            // Временно используем просто установку иконки из ресурсов, если Glide не работает
-            // Glide.with(this).load(iconUrl).into(weatherIcon)
-            // Пока закомментируем Glide, чтобы приложение запустилось
-            weatherIcon.setImageResource(android.R.drawable.ic_dialog_info)
-        } catch (e: Exception) {
-            weatherIcon.setImageResource(android.R.drawable.ic_dialog_info)
-        }
+        weatherIcon.text = mapWeatherCodeToEmoji(weather.iconCode)
     }
 
     private fun showWeatherLoading() {
-        weatherContainer.isVisible = false
+        weatherContainer.isVisible = true
         weatherLoadingText.isVisible = true
         weatherErrorText.isVisible = false
     }
 
     private fun showWeatherError(error: String) {
-        weatherContainer.isVisible = false
+        weatherContainer.isVisible = true
         weatherLoadingText.isVisible = false
-        weatherErrorText.isVisible = true
-        weatherErrorText.text = getString(R.string.weather_error_format, error)
+        weatherErrorText.isVisible = false
+        if (viewModel.weather.value == null) {
+            setWeatherPlaceholders()
+        }
+        Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
     }
 
     private fun setupRefreshButton() {
         refreshWeatherButton.setOnClickListener {
-            viewModel.refreshWeather()
+            val selectedCoordinates = selectedCoordinatesOverride
+            if (selectedCoordinates != null) {
+                viewModel.refreshWeatherByCoordinates(selectedCoordinates.first, selectedCoordinates.second)
+            } else {
+                val selectedCity = selectedCityOverride
+                viewModel.refreshWeather(selectedCity ?: FALLBACK_CITY)
+            }
             Toast.makeText(requireContext(), getString(R.string.refreshing_weather), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupLocationPicker() {
+        weatherLocationText.setOnClickListener {
+            val cityLabels = arrayOf(
+                getString(R.string.weather_city_minsk),
+                getString(R.string.weather_city_brest),
+                getString(R.string.weather_city_grodno),
+                getString(R.string.weather_city_vitebsk),
+                getString(R.string.weather_city_mogilev)
+            )
+            val cityCoordinates = arrayOf(
+                53.9045 to 27.5615, // Minsk
+                52.0976 to 23.7341, // Brest
+                53.6694 to 23.8131, // Grodno
+                55.1904 to 30.2049, // Vitebsk
+                53.9006 to 30.3317  // Mogilev
+            )
+            val options = arrayOf(
+                cityLabels[0],
+                cityLabels[1],
+                cityLabels[2],
+                cityLabels[3],
+                cityLabels[4],
+                getString(R.string.weather_city_other)
+            )
+
+            AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.weather_choose_city_title))
+                .setItems(options) { _, which ->
+                    when (which) {
+                        0, 1, 2, 3, 4 -> {
+                            selectedCoordinatesOverride = cityCoordinates[which]
+                            selectedCityOverride = getString(
+                                R.string.weather_city_with_country_format,
+                                cityLabels[which]
+                            )
+                            viewModel.refreshWeatherByCoordinates(
+                                cityCoordinates[which].first,
+                                cityCoordinates[which].second
+                            )
+                        }
+                        5 -> showCustomCityDialog()
+                    }
+                }
+                .show()
+        }
+    }
+
+    private fun showCustomCityDialog() {
+        val input = EditText(requireContext()).apply {
+            hint = getString(R.string.weather_city_input_hint)
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.weather_choose_city_title))
+            .setView(input)
+            .setPositiveButton(getString(R.string.save)) { _, _ ->
+                val city = input.text.toString().trim()
+                if (city.isNotEmpty()) {
+                    selectedCoordinatesOverride = null
+                    selectedCityOverride = city
+                    viewModel.refreshWeather(city)
+                }
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+    }
+
+    private fun setWeatherPlaceholders() {
+        if (weatherLocationText.text.isNullOrBlank() || weatherLocationText.text == "--") {
+            weatherLocationText.text = getString(R.string.weather_city_minsk)
+        }
+        temperatureText.text = "--°C"
+        conditionText.text = "--"
+        weatherDetailsText.text = getString(R.string.weather_details_placeholder)
+        weatherIcon.text = "☁️"
+    }
+
+    private fun mapWeatherCodeToEmoji(iconCode: String): String {
+        val code = iconCode.toIntOrNull() ?: return "☁️"
+        return when (code) {
+            0 -> "☀️"
+            1 -> "🌤️"
+            2 -> "⛅"
+            3 -> "☁️"
+            45, 48 -> "🌫️"
+            51, 53, 55, 56, 57 -> "🌦️"
+            61, 63, 65, 66, 67, 80, 81, 82 -> "🌧️"
+            71, 73, 75, 77, 85, 86 -> "🌨️"
+            95, 96, 99 -> "⛈️"
+            else -> "☁️"
+        }
+    }
+
+    private fun refreshWeatherForCurrentSelection() {
+        val selectedCoordinates = selectedCoordinatesOverride
+        if (selectedCoordinates != null) {
+            viewModel.refreshWeatherByCoordinates(selectedCoordinates.first, selectedCoordinates.second)
+        } else {
+            val selectedCity = selectedCityOverride
+            viewModel.refreshWeather(selectedCity ?: FALLBACK_CITY)
         }
     }
 

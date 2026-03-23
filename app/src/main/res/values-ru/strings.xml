@@ -54,8 +54,23 @@
     <string name="loading_weather">Загрузка погоды...</string>
     <string name="weather_error">Не удалось загрузить данные о погоде</string>
     <string name="refreshing_weather">Обновление погоды...</string>
+    <string name="update_weather_button">Обновить</string>
+    <string name="weather_choose_city_title">Выберите город</string>
+    <string name="weather_city_current_location">Текущая геолокация</string>
+    <string name="weather_city_other">Другой город...</string>
+    <string name="weather_city_input_hint">Введите город</string>
+    <string name="weather_city_minsk">Минск</string>
+    <string name="weather_city_brest">Брест</string>
+    <string name="weather_city_grodno">Гродно</string>
+    <string name="weather_city_vitebsk">Витебск</string>
+    <string name="weather_city_mogilev">Могилев</string>
+    <string name="weather_city_with_country_format">%1$s, Беларусь</string>
+    <string name="location_permission_required">Для погоды по геолокации нужно разрешение на местоположение.</string>
+    <string name="location_unavailable">Не удалось определить текущую геолокацию. Выберите город вручную.</string>
+    <string name="location_services_disabled">На устройстве отключена геолокация.</string>
 
     <string name="temperature_format">%d°C</string>
     <string name="weather_details_format">💧 %d%% | 💨 %d м/с</string>
+    <string name="weather_details_placeholder">💧 --%% | 💨 -- м/с</string>
     <string name="weather_error_format">❌ %s</string>
 </resources>

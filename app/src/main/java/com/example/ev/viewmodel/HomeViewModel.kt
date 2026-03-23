@@ -33,10 +33,9 @@ class HomeViewModel(
 
     init {
         loadScenarios()
-        loadWeather()
     }
 
-    fun loadWeather(city: String = "Moscow") {
+    fun loadWeather(city: String = "Minsk") {
         viewModelScope.launch {
             _isLoadingWeather.value = true
             try {
@@ -56,8 +55,50 @@ class HomeViewModel(
         }
     }
 
-    fun refreshWeather(city: String = "Moscow") {
+    fun refreshWeather(city: String = "Minsk") {
         loadWeather(city)
+    }
+
+    fun loadWeatherByCoordinates(latitude: Double, longitude: Double) {
+        viewModelScope.launch {
+            _isLoadingWeather.value = true
+            try {
+                val result = weatherRepository.getWeatherByCoordinates(latitude, longitude)
+                result.onSuccess { weatherData ->
+                    _weather.value = weatherData
+                    _weatherError.value = null
+                }.onFailure { exception ->
+                    _weatherError.value = exception.message ?: "Failed to load weather"
+                }
+            } catch (e: Exception) {
+                _weatherError.value = e.message
+            } finally {
+                _isLoadingWeather.value = false
+            }
+        }
+    }
+
+    fun refreshWeatherByCoordinates(latitude: Double, longitude: Double) {
+        loadWeatherByCoordinates(latitude, longitude)
+    }
+
+    fun refreshWeatherByIpOrFallback(fallbackCity: String = "Minsk") {
+        viewModelScope.launch {
+            _isLoadingWeather.value = true
+            try {
+                val result = weatherRepository.getWeatherByIp()
+                result.onSuccess { weatherData ->
+                    _weather.value = weatherData
+                    _weatherError.value = null
+                }.onFailure {
+                    loadWeather(fallbackCity)
+                }
+            } catch (_: Exception) {
+                loadWeather(fallbackCity)
+            } finally {
+                _isLoadingWeather.value = false
+            }
+        }
     }
 
     fun loadScenarios() {

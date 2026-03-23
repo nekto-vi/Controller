@@ -1,6 +1,5 @@
 package com.example.ev.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -42,12 +41,15 @@ class HomeViewModel(
                 val result = weatherRepository.getWeather(city)
                 result.onSuccess { weatherData ->
                     _weather.value = weatherData
-                    _weatherError.value = null
+                    _weatherError.value =
+                        if (weatherRepository.isNetworkAvailable()) null
+                        else weatherRepository.getOfflineUserMessage()
                 }.onFailure { exception ->
+                    _weather.value = null
                     _weatherError.value = exception.message ?: "Failed to load weather"
-                    // Если есть кэшированные данные, они уже будут в _weather
                 }
             } catch (e: Exception) {
+                _weather.value = null
                 _weatherError.value = e.message
             } finally {
                 _isLoadingWeather.value = false
@@ -66,11 +68,15 @@ class HomeViewModel(
                 val result = weatherRepository.getWeatherByCoordinates(latitude, longitude)
                 result.onSuccess { weatherData ->
                     _weather.value = weatherData
-                    _weatherError.value = null
+                    _weatherError.value =
+                        if (weatherRepository.isNetworkAvailable()) null
+                        else weatherRepository.getOfflineUserMessage()
                 }.onFailure { exception ->
+                    _weather.value = null
                     _weatherError.value = exception.message ?: "Failed to load weather"
                 }
             } catch (e: Exception) {
+                _weather.value = null
                 _weatherError.value = e.message
             } finally {
                 _isLoadingWeather.value = false
@@ -89,7 +95,9 @@ class HomeViewModel(
                 val result = weatherRepository.getWeatherByIp()
                 result.onSuccess { weatherData ->
                     _weather.value = weatherData
-                    _weatherError.value = null
+                    _weatherError.value =
+                        if (weatherRepository.isNetworkAvailable()) null
+                        else weatherRepository.getOfflineUserMessage()
                 }.onFailure {
                     loadWeather(fallbackCity)
                 }
@@ -150,5 +158,12 @@ class HomeViewModel(
 
     fun clearWeatherError() {
         _weatherError.value = null
+    }
+
+    /**
+     * Сеть пропала: показываем сообщение, но оставляем последние успешные данные погоды.
+     */
+    fun reportNetworkLost(message: String) {
+        _weatherError.value = message
     }
 }

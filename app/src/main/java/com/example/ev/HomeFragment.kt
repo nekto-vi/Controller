@@ -1,5 +1,8 @@
 package com.example.ev
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.ev.data.ScenarioRepository
 import com.example.ev.data.WeatherRepository
+import com.example.ev.network.NetworkConnectivity
 import com.example.ev.viewmodel.HomeViewModel
 import com.example.ev.viewmodel.HomeViewModelFactory
 import java.util.Locale
@@ -43,6 +47,10 @@ class HomeFragment : Fragment() {
     private lateinit var refreshWeatherButton: Button
     private var selectedCityOverride: String? = FALLBACK_CITY
     private var selectedCoordinatesOverride: Pair<Double, Double>? = null
+
+    private var connectivityCallback: ConnectivityManager.NetworkCallback? = null
+    /** null — ещё не инициализировали; false/true — последнее известное состояние сети */
+    private var lastNetworkAvailable: Boolean? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -80,6 +88,66 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         refreshWeatherForCurrentSelection()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        registerConnectivityCallback()
+    }
+
+    override fun onStop() {
+        unregisterConnectivityCallback()
+        super.onStop()
+    }
+
+    private fun registerConnectivityCallback() {
+        if (connectivityCallback != null) return
+        val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                val wasOffline = lastNetworkAvailable == false
+                lastNetworkAvailable = true
+                view?.post {
+                    if (!isAdded) return@post
+                    viewModel.clearWeatherError()
+                    weatherErrorText.isVisible = false
+                    if (wasOffline) {
+                        Toast.makeText(
+                            requireContext(),
+                            getString(R.string.weather_back_online_refreshing),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        refreshWeatherForCurrentSelection()
+                    }
+                }
+            }
+
+            override fun onLost(network: Network) {
+                lastNetworkAvailable = false
+                view?.post {
+                    if (!isAdded) return@post
+                    val msg = getString(R.string.weather_offline_no_data)
+                    viewModel.reportNetworkLost(msg)
+                    Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        connectivityCallback = callback
+        cm.registerDefaultNetworkCallback(callback)
+
+        lastNetworkAvailable = NetworkConnectivity.isNetworkAvailable(requireContext())
+        if (lastNetworkAvailable == false) {
+            viewModel.reportNetworkLost(getString(R.string.weather_offline_no_data))
+        }
+    }
+
+    private fun unregisterConnectivityCallback() {
+        val cb = connectivityCallback ?: return
+        val ctx = context ?: return
+        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        runCatching { cm.unregisterNetworkCallback(cb) }
+        connectivityCallback = null
+        lastNetworkAvailable = null
     }
 
     private fun setupViewModel() {
@@ -129,10 +197,10 @@ class HomeFragment : Fragment() {
                 weatherErrorText.isVisible = false
                 return@observe
             }
+            weatherErrorText.text = error
+            weatherErrorText.isVisible = true
             if (viewModel.weather.value == null) {
-                showWeatherError(error)
-            } else {
-                weatherErrorText.isVisible = false
+                setWeatherPlaceholders()
             }
         }
     }
@@ -140,7 +208,7 @@ class HomeFragment : Fragment() {
     private fun updateWeatherUI(weather: com.example.ev.data.weather.WeatherData) {
         weatherContainer.isVisible = true
         weatherLoadingText.isVisible = false
-        weatherErrorText.isVisible = false
+        // Сообщение об офлайне (кэш без сети) управляется weatherError
 
         val selectedCoordinates = selectedCoordinatesOverride
         weatherLocationText.text = if (selectedCoordinates != null && !selectedCityOverride.isNullOrBlank()) {
@@ -165,17 +233,6 @@ class HomeFragment : Fragment() {
         weatherContainer.isVisible = true
         weatherLoadingText.isVisible = true
         weatherErrorText.isVisible = false
-    }
-
-    private fun showWeatherError(error: String) {
-        weatherContainer.isVisible = true
-        weatherLoadingText.isVisible = false
-        weatherErrorText.text = error
-        weatherErrorText.isVisible = true
-        if (viewModel.weather.value == null) {
-            setWeatherPlaceholders()
-        }
-        Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show()
     }
 
     private fun setupRefreshButton() {

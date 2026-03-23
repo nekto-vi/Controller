@@ -43,6 +43,10 @@ class WeatherRepository(private val context: Context) {
     private fun offlineMessage(): String =
         context.getString(R.string.weather_offline_no_data)
 
+    fun isNetworkAvailable(): Boolean = NetworkConnectivity.isNetworkAvailable(context)
+
+    fun getOfflineUserMessage(): String = offlineMessage()
+
     private fun isLikelyNetworkFailure(e: Throwable): Boolean {
         var t: Throwable? = e
         while (t != null) {

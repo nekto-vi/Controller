@@ -54,6 +54,7 @@
     <string name="loading_weather">Loading weather...</string>
     <string name="weather_error">Unable to load weather data</string>
     <string name="weather_offline_no_data">You are offline. Weather data is unavailable.</string>
+    <string name="weather_back_online_refreshing">Back online. Updating weather…</string>
     <string name="refreshing_weather">Updating weather...</string>
     <string name="update_weather_button">Update</string>
     <string name="weather_choose_city_title">Choose city</string>

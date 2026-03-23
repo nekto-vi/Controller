@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:padding="16dp">
 
     <TextView
@@ -12,10 +12,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Add New Scenario"
-        android:textSize="28sp"
+        android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -96,7 +96,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:minHeight="100dp"
+        android:overScrollMode="ifContentScrolls"
+        android:scrollbars="vertical"
+        android:nestedScrollingEnabled="true"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/selectedRoomsTitle" />
@@ -123,12 +125,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/temperatureLabel">
 
-        <Button
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/decreaseTempButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:text="-"
-            android:textSize="24sp" />
+            android:contentDescription="@string/temp_minus_desc"
+            android:backgroundTint="?attr/colorPrimary"
+            android:padding="12dp"
+            app:srcCompat="@drawable/ic_temp_minus"
+            app:tint="?attr/colorOnPrimary" />
 
         <TextView
             android:id="@+id/temperatureValue"
@@ -141,12 +146,15 @@
             android:minWidth="80dp"
             android:gravity="center" />
 
-        <Button
+        <androidx.appcompat.widget.AppCompatImageButton
             android:id="@+id/increaseTempButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:text="+"
-            android:textSize="24sp" />
+            android:contentDescription="@string/temp_plus_desc"
+            android:backgroundTint="?attr/colorPrimary"
+            android:padding="12dp"
+            app:srcCompat="@drawable/ic_temp_plus"
+            app:tint="?attr/colorOnPrimary" />
     </LinearLayout>
 
     <Button
@@ -155,8 +163,8 @@
         android:layout_height="wrap_content"
         android:text="Add Scenario"
         android:textSize="18sp"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
         android:padding="12dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

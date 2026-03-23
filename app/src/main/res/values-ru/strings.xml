@@ -73,4 +73,8 @@
     <string name="weather_details_format">💧 %d%% | 💨 %d м/с</string>
     <string name="weather_details_placeholder">💧 --%% | 💨 -- м/с</string>
     <string name="weather_error_format">❌ %s</string>
+    <string name="temp_minus">-</string>
+    <string name="temp_plus">+</string>
+    <string name="temp_minus_desc">Уменьшить температуру</string>
+    <string name="temp_plus_desc">Увеличить температуру</string>
 </resources>

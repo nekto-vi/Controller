@@ -199,7 +199,16 @@ class EditScenarioDialog : DialogFragment() {
             binding.selectedRoomsRecyclerView.visibility = View.GONE
         } else {
             binding.selectedRoomsRecyclerView.visibility = View.VISIBLE
+            val itemHeightDp = 48
+            val maxHeightDp = 140
+            val targetDp = (selectedRoomKeys.size * itemHeightDp).coerceAtMost(maxHeightDp)
+            binding.selectedRoomsRecyclerView.layoutParams.height = dpToPx(targetDp)
+            binding.selectedRoomsRecyclerView.requestLayout()
         }
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
     }
 
     override fun onStart() {

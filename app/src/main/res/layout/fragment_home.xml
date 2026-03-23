@@ -17,10 +17,117 @@
         android:textColor="?attr/colorOnSurface"
         android:textSize="24sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.079" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Weather Section -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/weatherContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="?attr/colorSurfaceVariant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/MyHomeText">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <ImageView
+                android:id="@+id/weatherIcon"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:contentDescription="@string/weather_icon"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <TextView
+                android:id="@+id/temperatureText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="--°C"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                app:layout_constraintStart_toEndOf="@+id/weatherIcon"
+                app:layout_constraintTop_toTopOf="@+id/weatherIcon" />
+
+            <TextView
+                android:id="@+id/conditionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="--"
+                android:textSize="14sp"
+                android:textColor="?attr/colorOnSurface"
+                app:layout_constraintStart_toStartOf="@+id/temperatureText"
+                app:layout_constraintTop_toBottomOf="@+id/temperatureText" />
+
+            <TextView
+                android:id="@+id/weatherDetailsText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="--"
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <Button
+                android:id="@+id/refreshWeatherButton"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="🔄"
+                android:textSize="16sp"
+                android:backgroundTint="?attr/colorPrimary"
+                android:paddingHorizontal="12dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/weatherDetailsText"
+                android:layout_marginTop="8dp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Loading indicator for weather -->
+    <TextView
+        android:id="@+id/weatherLoadingText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/loading_weather"
+        android:textAlignment="center"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/MyHomeText" />
+
+    <!-- Weather error message -->
+    <TextView
+        android:id="@+id/weatherErrorText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="@string/weather_error"
+        android:textAlignment="center"
+        android:textColor="?attr/colorError"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/MyHomeText" />
 
     <TextView
         android:id="@+id/emptyStateText"
@@ -46,7 +153,7 @@
         app:layout_constraintBottom_toTopOf="@+id/addScenarioButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/MyHomeText" />
+        app:layout_constraintTop_toBottomOf="@+id/weatherContainer" />
 
     <Button
         android:id="@+id/addScenarioButton"

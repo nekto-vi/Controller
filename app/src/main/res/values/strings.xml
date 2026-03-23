@@ -49,4 +49,13 @@
     <string name="delete_scenario_title">Delete Scenario</string>
     <string name="delete_scenario_message">Are you sure you want to delete "%s"?</string>
     <string name="no_scenarios_yet">No scenarios yet.\nTap the button below to add your first scenario!</string>
+
+    <string name="weather_icon">Weather icon</string>
+    <string name="loading_weather">Loading weather...</string>
+    <string name="weather_error">Unable to load weather data</string>
+    <string name="refreshing_weather">Updating weather...</string>
+
+    <string name="temperature_format">%d°C</string>
+    <string name="weather_details_format">💧 %d%% | 💨 %d m/s</string>
+    <string name="weather_error_format">❌ %s</string>
 </resources>

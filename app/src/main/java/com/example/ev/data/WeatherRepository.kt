@@ -5,13 +5,20 @@ import android.content.SharedPreferences
 import com.example.ev.LocaleHelper
 import com.example.ev.data.weather.WeatherData
 import com.example.ev.data.weather.OpenMeteoWeatherResponse
+import com.example.ev.R
+import com.example.ev.network.NetworkConnectivity
 import com.example.ev.network.RetrofitClient
 import com.example.ev.network.GeocodingApiService
 import com.example.ev.network.WeatherApiService
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.ConnectException
+import java.net.SocketException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.net.URL
+import javax.net.ssl.SSLException
 
 class WeatherRepository(private val context: Context) {
     private data class IpLocationResponse(
@@ -33,6 +40,24 @@ class WeatherRepository(private val context: Context) {
         private const val DEFAULT_CITY = "Minsk"
     }
 
+    private fun offlineMessage(): String =
+        context.getString(R.string.weather_offline_no_data)
+
+    private fun isLikelyNetworkFailure(e: Throwable): Boolean {
+        var t: Throwable? = e
+        while (t != null) {
+            when (t) {
+                is UnknownHostException,
+                is SocketTimeoutException,
+                is ConnectException,
+                is SocketException,
+                is SSLException -> return true
+            }
+            t = t.cause
+        }
+        return false
+    }
+
     suspend fun getWeather(city: String = DEFAULT_CITY): Result<WeatherData> {
         return withContext(Dispatchers.IO) {
             try {
@@ -41,6 +66,14 @@ class WeatherRepository(private val context: Context) {
                 val cachedWeather = getCachedWeather(city, languageCode)
                 if (cachedWeather != null && !isCacheExpired(city, languageCode)) {
                     return@withContext Result.success(cachedWeather)
+                }
+
+                if (!NetworkConnectivity.isNetworkAvailable(context)) {
+                    val stale = getCachedWeather(city, languageCode)
+                    if (stale != null) {
+                        return@withContext Result.success(stale)
+                    }
+                    return@withContext Result.failure(Exception(offlineMessage()))
                 }
 
                 val geocodingResponse = geocodingApiService.searchCity(
@@ -79,12 +112,17 @@ class WeatherRepository(private val context: Context) {
                     return@withContext Result.failure(Exception("Error: ${response.code()} - ${response.message()}"))
                 }
             } catch (e: Exception) {
-                // Если интернет отсутствует, пробуем вернуть кэш даже если он устарел
-                val cachedWeather = getCachedWeather(city, getLanguageCode())
+                val languageCode = getLanguageCode()
+                val cachedWeather = getCachedWeather(city, languageCode)
                 if (cachedWeather != null) {
                     return@withContext Result.success(cachedWeather)
                 }
-                return@withContext Result.failure(e)
+                val message = if (isLikelyNetworkFailure(e)) {
+                    offlineMessage()
+                } else {
+                    e.message ?: context.getString(R.string.weather_error)
+                }
+                return@withContext Result.failure(Exception(message))
             }
         }
     }
@@ -92,6 +130,10 @@ class WeatherRepository(private val context: Context) {
     suspend fun getWeatherByCoordinates(latitude: Double, longitude: Double): Result<WeatherData> {
         return withContext(Dispatchers.IO) {
             try {
+                if (!NetworkConnectivity.isNetworkAvailable(context)) {
+                    return@withContext Result.failure(Exception(offlineMessage()))
+                }
+
                 val weatherResponse = apiService.getCurrentWeather(
                     latitude = latitude,
                     longitude = longitude
@@ -124,7 +166,12 @@ class WeatherRepository(private val context: Context) {
                     )
                 )
             } catch (e: Exception) {
-                Result.failure(e)
+                val message = if (isLikelyNetworkFailure(e)) {
+                    offlineMessage()
+                } else {
+                    e.message ?: context.getString(R.string.weather_error)
+                }
+                Result.failure(Exception(message))
             }
         }
     }
@@ -132,6 +179,10 @@ class WeatherRepository(private val context: Context) {
     suspend fun getWeatherByIp(): Result<WeatherData> {
         return withContext(Dispatchers.IO) {
             try {
+                if (!NetworkConnectivity.isNetworkAvailable(context)) {
+                    return@withContext Result.failure(Exception(offlineMessage()))
+                }
+
                 val gson = com.google.gson.Gson()
 
                 val ipApiJson = URL("https://ipapi.co/json/").readText()

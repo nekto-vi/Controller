@@ -53,6 +53,7 @@
     <string name="weather_icon">Иконка погоды</string>
     <string name="loading_weather">Загрузка погоды...</string>
     <string name="weather_error">Не удалось загрузить данные о погоде</string>
+    <string name="weather_offline_no_data">Нет подключения к интернету. Данные о погоде недоступны.</string>
     <string name="refreshing_weather">Обновление погоды...</string>
     <string name="update_weather_button">Обновить</string>
     <string name="weather_choose_city_title">Выберите город</string>

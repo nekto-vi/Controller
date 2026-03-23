@@ -125,8 +125,14 @@ class HomeFragment : Fragment() {
         }
 
         viewModel.weatherError.observe(viewLifecycleOwner) { error ->
-            if (error != null && viewModel.weather.value == null) {
+            if (error == null) {
+                weatherErrorText.isVisible = false
+                return@observe
+            }
+            if (viewModel.weather.value == null) {
                 showWeatherError(error)
+            } else {
+                weatherErrorText.isVisible = false
             }
         }
     }
@@ -164,11 +170,12 @@ class HomeFragment : Fragment() {
     private fun showWeatherError(error: String) {
         weatherContainer.isVisible = true
         weatherLoadingText.isVisible = false
-        weatherErrorText.isVisible = false
+        weatherErrorText.text = error
+        weatherErrorText.isVisible = true
         if (viewModel.weather.value == null) {
             setWeatherPlaceholders()
         }
-        Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show()
     }
 
     private fun setupRefreshButton() {

@@ -1,8 +1,10 @@
 package com.example.ev.data
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.example.ev.LocaleHelper
+import com.example.ev.data.local.AppDatabase
+import com.example.ev.data.local.toCacheEntity
+import com.example.ev.data.local.toWeatherData
 import com.example.ev.data.weather.WeatherData
 import com.example.ev.data.weather.OpenMeteoWeatherResponse
 import com.example.ev.R
@@ -18,6 +20,7 @@ import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.net.URL
+import java.util.Locale
 import javax.net.ssl.SSLException
 
 class WeatherRepository(private val context: Context) {
@@ -31,7 +34,7 @@ class WeatherRepository(private val context: Context) {
         val country: String?
     )
 
-    private val prefs: SharedPreferences = context.getSharedPreferences("weather_cache", Context.MODE_PRIVATE)
+    private val cacheDao = AppDatabase.getInstance(context).weatherCacheDao()
     private val apiService: WeatherApiService = RetrofitClient.weatherApiService
     private val geocodingApiService: GeocodingApiService = RetrofitClient.geocodingApiService
 
@@ -46,6 +49,16 @@ class WeatherRepository(private val context: Context) {
     fun isNetworkAvailable(): Boolean = NetworkConnectivity.isNetworkAvailable(context)
 
     fun getOfflineUserMessage(): String = offlineMessage()
+
+    /** Ключ кэша по названию города (поиск). */
+    private fun cityCacheKey(city: String, language: String): String {
+        val normalized = city.trim().lowercase(Locale.ROOT).replace("\\s+".toRegex(), " ")
+        return "city|$normalized|$language"
+    }
+
+    /** Ключ кэша по координатам (быстрый выбор города). */
+    private fun coordCacheKey(latitude: Double, longitude: Double, language: String): String =
+        String.format(Locale.US, "coord|%.4f|%.4f|%s", latitude, longitude, language)
 
     private fun isLikelyNetworkFailure(e: Throwable): Boolean {
         var t: Throwable? = e
@@ -62,18 +75,23 @@ class WeatherRepository(private val context: Context) {
         return false
     }
 
+    private suspend fun isCacheExpired(cacheKey: String): Boolean {
+        val entity = cacheDao.getByKey(cacheKey) ?: return true
+        return System.currentTimeMillis() - entity.cachedAtMillis > CACHE_DURATION_MS
+    }
+
     suspend fun getWeather(city: String = DEFAULT_CITY): Result<WeatherData> {
         return withContext(Dispatchers.IO) {
             try {
                 val languageCode = getLanguageCode()
-                // Проверяем кэш
-                val cachedWeather = getCachedWeather(city, languageCode)
-                if (cachedWeather != null && !isCacheExpired(city, languageCode)) {
+                val cacheKey = cityCacheKey(city, languageCode)
+                val cachedWeather = cacheDao.getByKey(cacheKey)?.toWeatherData()
+                if (cachedWeather != null && !isCacheExpired(cacheKey)) {
                     return@withContext Result.success(cachedWeather)
                 }
 
                 if (!NetworkConnectivity.isNetworkAvailable(context)) {
-                    val stale = getCachedWeather(city, languageCode)
+                    val stale = cacheDao.getByKey(cacheKey)?.toWeatherData()
                     if (stale != null) {
                         return@withContext Result.success(stale)
                     }
@@ -93,7 +111,6 @@ class WeatherRepository(private val context: Context) {
                 val location = geocodingResponse.body()?.results?.firstOrNull()
                     ?: return@withContext Result.failure(Exception("City not found: $city"))
 
-                // Если кэш устарел или отсутствует, делаем запрос к API погоды
                 val response = apiService.getCurrentWeather(
                     latitude = location.latitude,
                     longitude = location.longitude
@@ -107,7 +124,7 @@ class WeatherRepository(private val context: Context) {
                             response = weatherResponse,
                             cityLabel = cityLabel.ifBlank { location.name }
                         )
-                        saveToCache(city, languageCode, weatherData)
+                        cacheDao.insert(weatherData.toCacheEntity(cacheKey))
                         return@withContext Result.success(weatherData)
                     } else {
                         return@withContext Result.failure(Exception("Empty response"))
@@ -117,7 +134,8 @@ class WeatherRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 val languageCode = getLanguageCode()
-                val cachedWeather = getCachedWeather(city, languageCode)
+                val cacheKey = cityCacheKey(city, languageCode)
+                val cachedWeather = cacheDao.getByKey(cacheKey)?.toWeatherData()
                 if (cachedWeather != null) {
                     return@withContext Result.success(cachedWeather)
                 }
@@ -134,7 +152,18 @@ class WeatherRepository(private val context: Context) {
     suspend fun getWeatherByCoordinates(latitude: Double, longitude: Double): Result<WeatherData> {
         return withContext(Dispatchers.IO) {
             try {
+                val languageCode = getLanguageCode()
+                val cacheKey = coordCacheKey(latitude, longitude, languageCode)
+                val cached = cacheDao.getByKey(cacheKey)?.toWeatherData()
+                if (cached != null && !isCacheExpired(cacheKey)) {
+                    return@withContext Result.success(cached)
+                }
+
                 if (!NetworkConnectivity.isNetworkAvailable(context)) {
+                    val stale = cacheDao.getByKey(cacheKey)?.toWeatherData()
+                    if (stale != null) {
+                        return@withContext Result.success(stale)
+                    }
                     return@withContext Result.failure(Exception(offlineMessage()))
                 }
 
@@ -154,7 +183,7 @@ class WeatherRepository(private val context: Context) {
                 val reverseResponse = geocodingApiService.reverseGeocode(
                     latitude = latitude,
                     longitude = longitude,
-                    language = getLanguageCode()
+                    language = languageCode
                 )
                 val location = reverseResponse.body()?.results?.firstOrNull()
                 val cityLabel = if (location != null) {
@@ -163,13 +192,19 @@ class WeatherRepository(private val context: Context) {
                     "Current location"
                 }
 
-                return@withContext Result.success(
-                    mapToWeatherData(
-                        response = weatherBody,
-                        cityLabel = cityLabel.ifBlank { "Current location" }
-                    )
+                val weatherData = mapToWeatherData(
+                    response = weatherBody,
+                    cityLabel = cityLabel.ifBlank { "Current location" }
                 )
+                cacheDao.insert(weatherData.toCacheEntity(cacheKey))
+                return@withContext Result.success(weatherData)
             } catch (e: Exception) {
+                val languageCode = getLanguageCode()
+                val cacheKey = coordCacheKey(latitude, longitude, languageCode)
+                val stale = cacheDao.getByKey(cacheKey)?.toWeatherData()
+                if (stale != null) {
+                    return@withContext Result.success(stale)
+                }
                 val message = if (isLikelyNetworkFailure(e)) {
                     offlineMessage()
                 } else {
@@ -223,32 +258,6 @@ class WeatherRepository(private val context: Context) {
             windSpeed = response.current.windSpeed,
             timestamp = System.currentTimeMillis()
         )
-    }
-
-    private fun getCachedWeather(city: String, language: String): WeatherData? {
-        val cachedJson = prefs.getString("weather_${city}_$language", null)
-        if (cachedJson == null) return null
-
-        return try {
-            val gson = com.google.gson.Gson()
-            gson.fromJson(cachedJson, WeatherData::class.java)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun saveToCache(city: String, language: String, weatherData: WeatherData) {
-        val gson = com.google.gson.Gson()
-        val json = gson.toJson(weatherData)
-        prefs.edit()
-            .putString("weather_${city}_$language", json)
-            .putLong("weather_${city}_${language}_timestamp", System.currentTimeMillis())
-            .apply()
-    }
-
-    private fun isCacheExpired(city: String, language: String): Boolean {
-        val lastUpdate = prefs.getLong("weather_${city}_${language}_timestamp", 0)
-        return System.currentTimeMillis() - lastUpdate > CACHE_DURATION_MS
     }
 
     private fun getLanguageCode(): String {

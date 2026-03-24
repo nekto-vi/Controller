@@ -19,7 +19,6 @@
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
 
-    <!-- Theme -->
     <string name="theme">Theme</string>
     <string name="light_theme">Light</string>
     <string name="dark_theme">Dark</string>
@@ -28,21 +27,18 @@
     <string name="theme_dark_applied">Dark theme applied</string>
     <string name="theme_system_applied">System theme applied</string>
 
-    <!-- Room keys -->
     <string name="room_living_room" translatable="false">living_room</string>
     <string name="room_bedroom" translatable="false">bedroom</string>
     <string name="room_kitchen" translatable="false">kitchen</string>
     <string name="room_bathroom" translatable="false">bathroom</string>
     <string name="room_hall" translatable="false">hall</string>
 
-    <!-- Room display names -->
     <string name="living_room">Living Room</string>
     <string name="bedroom">Bedroom</string>
     <string name="kitchen">Kitchen</string>
     <string name="bathroom">Bathroom</string>
     <string name="hall">Hall</string>
 
-    <!-- Toast messages -->
     <string name="select_room_first">Please select a room first</string>
     <string name="invalid_selection">Invalid room selection</string>
     <string name="room_already_selected">Room already selected</string>
@@ -53,4 +49,34 @@
     <string name="delete_scenario_title">Delete Scenario</string>
     <string name="delete_scenario_message">Are you sure you want to delete "%s"?</string>
     <string name="no_scenarios_yet">No scenarios yet.\nTap the button below to add your first scenario!</string>
+
+    <string name="weather_icon">Weather icon</string>
+    <string name="loading_weather">Loading weather...</string>
+    <string name="weather_error">Unable to load weather data</string>
+    <string name="weather_offline_no_data">You are offline. Weather data is unavailable.</string>
+    <string name="weather_back_online_refreshing">Back online. Updating weather…</string>
+    <string name="refreshing_weather">Updating weather...</string>
+    <string name="update_weather_button">Update</string>
+    <string name="weather_choose_city_title">Choose city</string>
+    <string name="weather_city_current_location">Current location</string>
+    <string name="weather_city_other">Other city...</string>
+    <string name="weather_city_input_hint">City</string>
+    <string name="weather_city_minsk">Minsk</string>
+    <string name="weather_city_brest">Brest</string>
+    <string name="weather_city_grodno">Grodno</string>
+    <string name="weather_city_vitebsk">Vitebsk</string>
+    <string name="weather_city_mogilev">Mogilev</string>
+    <string name="weather_city_with_country_format">%1$s, Belarus</string>
+    <string name="location_permission_required">Location permission is required for current location weather.</string>
+    <string name="location_unavailable">Unable to determine current location. Choose a city manually.</string>
+    <string name="location_services_disabled">Location services are disabled on your device.</string>
+
+    <string name="temperature_format">%d°C</string>
+    <string name="weather_details_format">💧 %d%% | 💨 %d m/s</string>
+    <string name="weather_details_placeholder">💧 --%% | 💨 -- m/s</string>
+    <string name="weather_error_format">❌ %s</string>
+    <string name="temp_minus">-</string>
+    <string name="temp_plus">+</string>
+    <string name="temp_minus_desc">Decrease temperature</string>
+    <string name="temp_plus_desc">Increase temperature</string>
 </resources>

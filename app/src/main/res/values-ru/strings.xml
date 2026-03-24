@@ -19,7 +19,6 @@
     <string name="edit">Редактировать</string>
     <string name="delete">Удалить</string>
 
-    <!-- Theme -->
     <string name="theme">Тема</string>
     <string name="light_theme">Светлая</string>
     <string name="dark_theme">Темная</string>
@@ -28,21 +27,18 @@
     <string name="theme_dark_applied">Применена темная тема</string>
     <string name="theme_system_applied">Применена системная тема</string>
 
-    <!-- Room keys -->
     <string name="room_living_room" translatable="false">living_room</string>
     <string name="room_bedroom" translatable="false">bedroom</string>
     <string name="room_kitchen" translatable="false">kitchen</string>
     <string name="room_bathroom" translatable="false">bathroom</string>
     <string name="room_hall" translatable="false">hall</string>
 
-    <!-- Room display names -->
     <string name="living_room">Гостиная</string>
     <string name="bedroom">Спальня</string>
     <string name="kitchen">Кухня</string>
     <string name="bathroom">Ванная</string>
     <string name="hall">Прихожая</string>
 
-    <!-- Toast messages -->
     <string name="select_room_first">Сначала выберите комнату</string>
     <string name="invalid_selection">Некорректный выбор</string>
     <string name="room_already_selected">Комната уже выбрана</string>
@@ -53,4 +49,34 @@
     <string name="delete_scenario_title">Удалить сценарий</string>
     <string name="delete_scenario_message">Вы уверены, что хотите удалить "%s"?</string>
     <string name="no_scenarios_yet">Пока нет сценариев.\nНажмите кнопку ниже, чтобы добавить первый!</string>
+
+    <string name="weather_icon">Иконка погоды</string>
+    <string name="loading_weather">Загрузка погоды...</string>
+    <string name="weather_error">Не удалось загрузить данные о погоде</string>
+    <string name="weather_offline_no_data">Нет подключения к интернету. Данные о погоде недоступны.</string>
+    <string name="weather_back_online_refreshing">Сеть восстановлена. Обновляем погоду…</string>
+    <string name="refreshing_weather">Обновление погоды...</string>
+    <string name="update_weather_button">Обновить</string>
+    <string name="weather_choose_city_title">Выберите город</string>
+    <string name="weather_city_current_location">Текущая геолокация</string>
+    <string name="weather_city_other">Другой город...</string>
+    <string name="weather_city_input_hint">Введите город</string>
+    <string name="weather_city_minsk">Минск</string>
+    <string name="weather_city_brest">Брест</string>
+    <string name="weather_city_grodno">Гродно</string>
+    <string name="weather_city_vitebsk">Витебск</string>
+    <string name="weather_city_mogilev">Могилев</string>
+    <string name="weather_city_with_country_format">%1$s, Беларусь</string>
+    <string name="location_permission_required">Для погоды по геолокации нужно разрешение на местоположение.</string>
+    <string name="location_unavailable">Не удалось определить текущую геолокацию. Выберите город вручную.</string>
+    <string name="location_services_disabled">На устройстве отключена геолокация.</string>
+
+    <string name="temperature_format">%d°C</string>
+    <string name="weather_details_format">💧 %d%% | 💨 %d м/с</string>
+    <string name="weather_details_placeholder">💧 --%% | 💨 -- м/с</string>
+    <string name="weather_error_format">❌ %s</string>
+    <string name="temp_minus">-</string>
+    <string name="temp_plus">+</string>
+    <string name="temp_minus_desc">Уменьшить температуру</string>
+    <string name="temp_plus_desc">Увеличить температуру</string>
 </resources>

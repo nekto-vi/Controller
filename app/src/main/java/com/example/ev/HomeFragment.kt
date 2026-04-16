@@ -9,11 +9,11 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.Spinner
 import android.widget.EditText
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -39,14 +39,15 @@ class HomeFragment : Fragment() {
     private lateinit var addScenarioButton: Button
     private lateinit var emptyStateText: TextView
     private lateinit var searchInput: EditText
-    private lateinit var sortSpinner: Spinner
-    private lateinit var roomFilterSpinner: Spinner
-    private lateinit var tempFilterSpinner: Spinner
+    private lateinit var filterButton: ImageButton
     private lateinit var scenarioAdapter: ScenarioAdapter
     private lateinit var viewModel: HomeViewModel
     private lateinit var sortModes: List<SortMode>
     private lateinit var roomFilterKeys: List<String?>
     private lateinit var tempRanges: List<IntRange?>
+    private lateinit var sortLabels: List<String>
+    private lateinit var roomLabels: List<String>
+    private lateinit var tempLabels: List<String>
 
     // Weather UI elements
     private lateinit var weatherContainer: View
@@ -76,9 +77,7 @@ class HomeFragment : Fragment() {
         addScenarioButton = view.findViewById(R.id.addScenarioButton)
         emptyStateText = view.findViewById(R.id.emptyStateText)
         searchInput = view.findViewById(R.id.searchInput)
-        sortSpinner = view.findViewById(R.id.sortSpinner)
-        roomFilterSpinner = view.findViewById(R.id.roomFilterSpinner)
-        tempFilterSpinner = view.findViewById(R.id.tempFilterSpinner)
+        filterButton = view.findViewById(R.id.filterButton)
 
         // Weather views
         weatherContainer = view.findViewById(R.id.weatherContainer)
@@ -186,9 +185,8 @@ class HomeFragment : Fragment() {
 
     private fun setupDataToolsControls() {
         setupSearchInput()
-        setupSortSpinner()
-        setupRoomFilterSpinner()
-        setupTemperatureSpinner()
+        initFilterOptions()
+        setupFilterButton()
     }
 
     private fun setupSearchInput() {
@@ -201,7 +199,7 @@ class HomeFragment : Fragment() {
         })
     }
 
-    private fun setupSortSpinner() {
+    private fun initFilterOptions() {
         sortModes = listOf(
             SortMode.DATE_DESC,
             SortMode.DATE_ASC,
@@ -211,7 +209,7 @@ class HomeFragment : Fragment() {
             SortMode.TEMPERATURE_DESC
         )
 
-        val sortLabels = listOf(
+        sortLabels = listOf(
             getString(R.string.sort_date_newest),
             getString(R.string.sort_date_oldest),
             getString(R.string.sort_name_asc),
@@ -220,65 +218,78 @@ class HomeFragment : Fragment() {
             getString(R.string.sort_temp_desc)
         )
 
-        sortSpinner.adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sortLabels).apply {
-                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-
-        sortSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                viewModel.setSortMode(sortModes[position])
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
-        }
-    }
-
-    private fun setupRoomFilterSpinner() {
         val roomOptions = RoomMapper.getAvailableRooms(requireContext())
         roomFilterKeys = listOf(null) + roomOptions.map { it.first }
-        val roomLabels = listOf(getString(R.string.filter_all_rooms)) + roomOptions.map { it.second }
+        roomLabels = listOf(getString(R.string.filter_all_rooms)) + roomOptions.map { it.second }
 
-        roomFilterSpinner.adapter =
-            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, roomLabels).apply {
-                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-
-        roomFilterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                viewModel.setRoomFilter(roomFilterKeys[position])
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
-        }
-    }
-
-    private fun setupTemperatureSpinner() {
         tempRanges = listOf(
             null,
             16..20,
             21..24,
             25..30
         )
-        val tempLabels = listOf(
+        tempLabels = listOf(
             getString(R.string.filter_all_temperatures),
             getString(R.string.temp_range_cool),
             getString(R.string.temp_range_comfort),
             getString(R.string.temp_range_warm)
         )
+    }
 
-        tempFilterSpinner.adapter =
+    private fun setupFilterButton() {
+        filterButton.setOnClickListener {
+            showFiltersDialog()
+        }
+    }
+
+    private fun showFiltersDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_scenario_filters, null)
+        val dialogSortSpinner = dialogView.findViewById<Spinner>(R.id.dialogSortSpinner)
+        val dialogRoomSpinner = dialogView.findViewById<Spinner>(R.id.dialogRoomSpinner)
+        val dialogTempSpinner = dialogView.findViewById<Spinner>(R.id.dialogTempSpinner)
+        val applyButton = dialogView.findViewById<Button>(R.id.applyFiltersButton)
+        val resetButton = dialogView.findViewById<Button>(R.id.resetFiltersButton)
+
+        dialogSortSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sortLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        dialogRoomSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, roomLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        dialogTempSpinner.adapter =
             ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, tempLabels).apply {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
 
-        tempFilterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                viewModel.setTemperatureFilter(tempRanges[position])
-            }
+        dialogSortSpinner.setSelection(sortModes.indexOf(viewModel.getSortMode()).coerceAtLeast(0))
+        dialogRoomSpinner.setSelection(roomFilterKeys.indexOf(viewModel.getRoomFilter()).coerceAtLeast(0))
+        dialogTempSpinner.setSelection(tempRanges.indexOf(viewModel.getTemperatureFilter()).coerceAtLeast(0))
 
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.filters_dialog_title))
+            .setView(dialogView)
+            .create()
+
+        applyButton.setOnClickListener {
+            viewModel.setSortMode(sortModes[dialogSortSpinner.selectedItemPosition])
+            viewModel.setRoomFilter(roomFilterKeys[dialogRoomSpinner.selectedItemPosition])
+            viewModel.setTemperatureFilter(tempRanges[dialogTempSpinner.selectedItemPosition])
+            dialog.dismiss()
         }
+
+        resetButton.setOnClickListener {
+            dialogSortSpinner.setSelection(0)
+            dialogRoomSpinner.setSelection(0)
+            dialogTempSpinner.setSelection(0)
+            viewModel.setSortMode(SortMode.DATE_DESC)
+            viewModel.setRoomFilter(null)
+            viewModel.setTemperatureFilter(null)
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun setupObservers() {

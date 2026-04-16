@@ -51,6 +51,13 @@
     <string name="no_scenarios_yet">No scenarios yet.\nTap the button below to add your first scenario!</string>
     <string name="no_scenarios_found">No scenarios found for current search or filters.</string>
     <string name="search_scenarios_hint">Search scenarios</string>
+    <string name="open_filters">Open filters</string>
+    <string name="filters_dialog_title">Scenario filters</string>
+    <string name="filter_sort_by">Sort by</string>
+    <string name="filter_room">Room</string>
+    <string name="filter_temperature">Temperature</string>
+    <string name="apply_filters">Apply</string>
+    <string name="reset_filters">Reset</string>
     <string name="sort_date_newest">Date: Newest first</string>
     <string name="sort_date_oldest">Date: Oldest first</string>
     <string name="sort_name_asc">Name: A-Z</string>

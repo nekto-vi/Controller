@@ -51,6 +51,13 @@
     <string name="no_scenarios_yet">Пока нет сценариев.\nНажмите кнопку ниже, чтобы добавить первый!</string>
     <string name="no_scenarios_found">По текущему поиску и фильтрам ничего не найдено.</string>
     <string name="search_scenarios_hint">Поиск сценариев</string>
+    <string name="open_filters">Открыть фильтры</string>
+    <string name="filters_dialog_title">Фильтры сценариев</string>
+    <string name="filter_sort_by">Сортировка</string>
+    <string name="filter_room">Комната</string>
+    <string name="filter_temperature">Температура</string>
+    <string name="apply_filters">Применить</string>
+    <string name="reset_filters">Сбросить</string>
     <string name="sort_date_newest">Дата: сначала новые</string>
     <string name="sort_date_oldest">Дата: сначала старые</string>
     <string name="sort_name_asc">Название: А-Я</string>

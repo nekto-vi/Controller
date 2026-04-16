@@ -155,6 +155,12 @@ class HomeViewModel(
         applySearchFilterSort()
     }
 
+    fun getSortMode(): SortMode = sortMode
+
+    fun getRoomFilter(): String? = selectedRoomKey
+
+    fun getTemperatureFilter(): IntRange? = temperatureRange
+
     fun hasActiveFiltersOrSearch(): Boolean {
         return searchQuery.isNotBlank() || selectedRoomKey != null || temperatureRange != null
     }

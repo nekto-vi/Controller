@@ -165,40 +165,33 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/weatherContainer">
 
-        <EditText
-            android:id="@+id/searchInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/search_scenarios_hint"
-            android:inputType="text"
-            android:maxLines="1"
-            android:padding="10dp" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <Spinner
-                android:id="@+id/sortSpinner"
+            <EditText
+                android:id="@+id/searchInput"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:hint="@string/search_scenarios_hint"
+                android:inputType="text"
+                android:maxLines="1"
+                android:padding="10dp" />
 
-            <Spinner
-                android:id="@+id/roomFilterSpinner"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
+            <ImageButton
+                android:id="@+id/filterButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_marginStart="8dp"
-                android:layout_weight="1" />
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/open_filters"
+                android:padding="10dp"
+                android:src="@drawable/ic_filter_list_24"
+                app:tint="?attr/colorOnSurface" />
         </LinearLayout>
-
-        <Spinner
-            android:id="@+id/tempFilterSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
     </LinearLayout>
 
     <TextView

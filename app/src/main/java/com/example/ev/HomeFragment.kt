@@ -4,11 +4,16 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -20,8 +25,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.ev.data.ScenarioRepository
 import com.example.ev.data.WeatherRepository
 import com.example.ev.network.NetworkConnectivity
+import com.example.ev.notifications.ScenarioScheduleManager
 import com.example.ev.viewmodel.HomeViewModel
 import com.example.ev.viewmodel.HomeViewModelFactory
+import com.example.ev.viewmodel.HomeViewModel.SortMode
 import java.util.Locale
 
 class HomeFragment : Fragment() {
@@ -32,8 +39,16 @@ class HomeFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var addScenarioButton: Button
     private lateinit var emptyStateText: TextView
+    private lateinit var searchInput: EditText
+    private lateinit var filterButton: ImageButton
     private lateinit var scenarioAdapter: ScenarioAdapter
     private lateinit var viewModel: HomeViewModel
+    private lateinit var sortModes: List<SortMode>
+    private lateinit var roomFilterKeys: List<String?>
+    private lateinit var tempRanges: List<IntRange?>
+    private lateinit var sortLabels: List<String>
+    private lateinit var roomLabels: List<String>
+    private lateinit var tempLabels: List<String>
 
     // Weather UI elements
     private lateinit var weatherContainer: View
@@ -62,6 +77,8 @@ class HomeFragment : Fragment() {
         recyclerView = view.findViewById(R.id.scenariosRecyclerView)
         addScenarioButton = view.findViewById(R.id.addScenarioButton)
         emptyStateText = view.findViewById(R.id.emptyStateText)
+        searchInput = view.findViewById(R.id.searchInput)
+        filterButton = view.findViewById(R.id.filterButton)
 
         // Weather views
         weatherContainer = view.findViewById(R.id.weatherContainer)
@@ -77,6 +94,7 @@ class HomeFragment : Fragment() {
 
         setupViewModel()
         setupRecyclerView()
+        setupDataToolsControls()
         setupObservers()
         setupAddButton()
         setupLocationPicker()
@@ -166,10 +184,119 @@ class HomeFragment : Fragment() {
         recyclerView.adapter = scenarioAdapter
     }
 
+    private fun setupDataToolsControls() {
+        setupSearchInput()
+        initFilterOptions()
+        setupFilterButton()
+    }
+
+    private fun setupSearchInput() {
+        searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.setSearchQuery(s?.toString().orEmpty())
+            }
+        })
+    }
+
+    private fun initFilterOptions() {
+        sortModes = listOf(
+            SortMode.DATE_DESC,
+            SortMode.DATE_ASC,
+            SortMode.NAME_ASC,
+            SortMode.NAME_DESC,
+            SortMode.TEMPERATURE_ASC,
+            SortMode.TEMPERATURE_DESC
+        )
+
+        sortLabels = listOf(
+            getString(R.string.sort_date_newest),
+            getString(R.string.sort_date_oldest),
+            getString(R.string.sort_name_asc),
+            getString(R.string.sort_name_desc),
+            getString(R.string.sort_temp_asc),
+            getString(R.string.sort_temp_desc)
+        )
+
+        val roomOptions = RoomMapper.getAvailableRooms(requireContext())
+        roomFilterKeys = listOf(null) + roomOptions.map { it.first }
+        roomLabels = listOf(getString(R.string.filter_all_rooms)) + roomOptions.map { it.second }
+
+        tempRanges = listOf(
+            null,
+            16..20,
+            21..24,
+            25..30
+        )
+        tempLabels = listOf(
+            getString(R.string.filter_all_temperatures),
+            getString(R.string.temp_range_cool),
+            getString(R.string.temp_range_comfort),
+            getString(R.string.temp_range_warm)
+        )
+    }
+
+    private fun setupFilterButton() {
+        filterButton.setOnClickListener {
+            showFiltersDialog()
+        }
+    }
+
+    private fun showFiltersDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_scenario_filters, null)
+        val dialogSortSpinner = dialogView.findViewById<Spinner>(R.id.dialogSortSpinner)
+        val dialogRoomSpinner = dialogView.findViewById<Spinner>(R.id.dialogRoomSpinner)
+        val dialogTempSpinner = dialogView.findViewById<Spinner>(R.id.dialogTempSpinner)
+        val applyButton = dialogView.findViewById<Button>(R.id.applyFiltersButton)
+        val resetButton = dialogView.findViewById<Button>(R.id.resetFiltersButton)
+
+        dialogSortSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sortLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        dialogRoomSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, roomLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        dialogTempSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, tempLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+
+        dialogSortSpinner.setSelection(sortModes.indexOf(viewModel.getSortMode()).coerceAtLeast(0))
+        dialogRoomSpinner.setSelection(roomFilterKeys.indexOf(viewModel.getRoomFilter()).coerceAtLeast(0))
+        dialogTempSpinner.setSelection(tempRanges.indexOf(viewModel.getTemperatureFilter()).coerceAtLeast(0))
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle(getString(R.string.filters_dialog_title))
+            .setView(dialogView)
+            .create()
+
+        applyButton.setOnClickListener {
+            viewModel.setSortMode(sortModes[dialogSortSpinner.selectedItemPosition])
+            viewModel.setRoomFilter(roomFilterKeys[dialogRoomSpinner.selectedItemPosition])
+            viewModel.setTemperatureFilter(tempRanges[dialogTempSpinner.selectedItemPosition])
+            dialog.dismiss()
+        }
+
+        resetButton.setOnClickListener {
+            dialogSortSpinner.setSelection(0)
+            dialogRoomSpinner.setSelection(0)
+            dialogTempSpinner.setSelection(0)
+            viewModel.setSortMode(SortMode.DATE_DESC)
+            viewModel.setRoomFilter(null)
+            viewModel.setTemperatureFilter(null)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
     private fun setupObservers() {
         viewModel.scenarios.observe(viewLifecycleOwner) { scenarios ->
             scenarioAdapter.updateScenarios(scenarios)
-            updateEmptyState(scenarios.isEmpty())
+            updateEmptyState(scenarios.isEmpty(), viewModel.hasActiveFiltersOrSearch())
         }
 
         viewModel.error.observe(viewLifecycleOwner) { error ->
@@ -357,6 +484,7 @@ class HomeFragment : Fragment() {
             dialog.setOnScenarioAddedListener(object : AddScenarioDialog.OnScenarioAddedListener {
                 override fun onScenarioAdded(scenario: Scenario) {
                     viewModel.addScenario(scenario)
+                    ScenarioScheduleManager.scheduleScenario(requireContext(), scenario)
                 }
             })
             dialog.show(parentFragmentManager, "AddScenarioDialog")
@@ -387,6 +515,7 @@ class HomeFragment : Fragment() {
         dialog.setOnScenarioEditedListener(object : EditScenarioDialog.OnScenarioEditedListener {
             override fun onScenarioEdited(updatedScenario: Scenario) {
                 viewModel.updateScenario(updatedScenario)
+                ScenarioScheduleManager.scheduleScenario(requireContext(), updatedScenario)
                 Toast.makeText(requireContext(), getString(R.string.scenario_updated), Toast.LENGTH_SHORT).show()
             }
 
@@ -402,6 +531,7 @@ class HomeFragment : Fragment() {
             .setTitle(getString(R.string.delete_scenario_title))
             .setMessage(getString(R.string.delete_scenario_message, scenario.name))
             .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                ScenarioScheduleManager.cancelScenario(requireContext(), scenario.id)
                 viewModel.deleteScenario(scenario.id)
                 Toast.makeText(requireContext(), getString(R.string.scenario_deleted), Toast.LENGTH_SHORT).show()
             }
@@ -409,11 +539,15 @@ class HomeFragment : Fragment() {
             .show()
     }
 
-    private fun updateEmptyState(isEmpty: Boolean) {
+    private fun updateEmptyState(isEmpty: Boolean, hasActiveFilters: Boolean) {
         if (isEmpty) {
             recyclerView.visibility = View.GONE
             emptyStateText.visibility = View.VISIBLE
-            emptyStateText.text = getString(R.string.no_scenarios_yet)
+            emptyStateText.text = if (hasActiveFilters) {
+                getString(R.string.no_scenarios_found)
+            } else {
+                getString(R.string.no_scenarios_yet)
+            }
         } else {
             recyclerView.visibility = View.VISIBLE
             emptyStateText.visibility = View.GONE

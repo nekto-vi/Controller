@@ -1,7 +1,12 @@
 package com.example.ev
 
 import android.app.Dialog
+import android.app.TimePickerDialog
 import android.content.Context
+import android.content.Intent
+import android.graphics.Point
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,9 +14,14 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
 import com.example.ev.databinding.ScenarioAddBinding
+import java.util.Locale
 
 class EditScenarioDialog : DialogFragment() {
 
@@ -23,6 +33,20 @@ class EditScenarioDialog : DialogFragment() {
     private val selectedRoomKeys = mutableListOf<String>()
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
+    private var selectedImageUri: Uri? = null
+    private var scheduleEnabled = false
+    private var selectedHour = 9
+    private var selectedMinute = 0
+    private val pickImageLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri == null) return@registerForActivityResult
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            runCatching {
+                requireContext().contentResolver.takePersistableUriPermission(uri, flags)
+            }
+            selectedImageUri = uri
+            updateImagePreview()
+        }
 
     interface OnScenarioEditedListener {
         fun onScenarioEdited(scenario: Scenario)
@@ -57,6 +81,8 @@ class EditScenarioDialog : DialogFragment() {
         setupRoomSpinner()
         setupSelectedRoomsRecyclerView()
         setupTemperatureControls()
+        setupImageControls()
+        setupScheduleControls()
         setupButtons()
         setupKeyboardHiding()
         updateEmptyState()
@@ -68,15 +94,21 @@ class EditScenarioDialog : DialogFragment() {
         selectedRoomKeys.clear()
         selectedRoomKeys.addAll(scenario.rooms)
         currentTemperature = scenario.temperature
+        selectedImageUri = scenario.imageUri?.let { Uri.parse(it) }
+        scheduleEnabled = scenario.scheduleEnabled
+        selectedHour = scenario.startHour
+        selectedMinute = scenario.startMinute
     }
 
     private fun updateLocalizedTexts() {
         binding.titleTextView.text = getString(R.string.edit_scenario)
-        binding.nameLabel.text = getString(R.string.scenario_name)
         binding.scenarioNameInput.hint = getString(R.string.scenario_name)
         binding.roomsLabel.text = getString(R.string.select_rooms)
         binding.selectedRoomsTitle.text = getString(R.string.selected_rooms)
         binding.temperatureLabel.text = getString(R.string.temperature)
+        binding.scheduleSwitch.text = getString(R.string.enable_schedule)
+        binding.scheduleTimeLabel.text = getString(R.string.schedule_time)
+        binding.chooseTimeButton.text = getString(R.string.choose_time)
         binding.addRoomButton.text = getString(R.string.add)
         binding.addScenarioButton.text = getString(R.string.save)
     }
@@ -128,6 +160,83 @@ class EditScenarioDialog : DialogFragment() {
         binding.temperatureValue.text = "$currentTemperature°C"
     }
 
+    private fun setupImageControls() {
+        updateImagePreview()
+
+        binding.scenarioImagePreview.setOnClickListener {
+            val options = mutableListOf(getString(R.string.choose_image))
+            if (selectedImageUri != null) {
+                options.add(getString(R.string.remove_image))
+            }
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.scenario_image_actions_title)
+                .setItems(options.toTypedArray()) { _, which ->
+                    when (which) {
+                        0 -> pickImageLauncher.launch(arrayOf("image/*"))
+                        1 -> {
+                            selectedImageUri = null
+                            updateImagePreview()
+                        }
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+    }
+
+    private fun updateImagePreview() {
+        val uri = selectedImageUri
+        if (uri == null) {
+            binding.scenarioImagePreview.setImageResource(android.R.drawable.ic_menu_gallery)
+            return
+        }
+        val opts = RequestOptions()
+            .centerCrop()
+            .placeholder(android.R.drawable.ic_menu_gallery)
+            .error(android.R.drawable.ic_menu_gallery)
+        Glide.with(this).load(uri).apply(opts).into(binding.scenarioImagePreview)
+    }
+
+    private fun setupScheduleControls() {
+        binding.scheduleSwitch.isChecked = scheduleEnabled
+        updateScheduleTimeDisplay()
+        updateScheduleViewsState()
+
+        binding.scheduleSwitch.setOnCheckedChangeListener { _, isChecked ->
+            scheduleEnabled = isChecked
+            updateScheduleViewsState()
+        }
+
+        binding.chooseTimeButton.setOnClickListener {
+            TimePickerDialog(
+                requireContext(),
+                { _, hourOfDay, minute ->
+                    selectedHour = hourOfDay
+                    selectedMinute = minute
+                    updateScheduleTimeDisplay()
+                },
+                selectedHour,
+                selectedMinute,
+                true
+            ).show()
+        }
+    }
+
+    private fun updateScheduleViewsState() {
+        binding.scheduleTimeLabel.isEnabled = scheduleEnabled
+        binding.scheduleTimeValue.isEnabled = scheduleEnabled
+        binding.chooseTimeButton.isEnabled = scheduleEnabled
+    }
+
+    private fun updateScheduleTimeDisplay() {
+        binding.scheduleTimeValue.text = String.format(
+            Locale.getDefault(),
+            "%02d:%02d",
+            selectedHour,
+            selectedMinute
+        )
+    }
+
     private fun setupButtons() {
         binding.addRoomButton.setOnClickListener {
             hideKeyboard()
@@ -166,7 +275,11 @@ class EditScenarioDialog : DialogFragment() {
                     val updatedScenario = scenario.copy(
                         name = scenarioName,
                         rooms = selectedRoomKeys.toList(),
-                        temperature = currentTemperature
+                        temperature = currentTemperature,
+                        imageUri = selectedImageUri?.toString(),
+                        scheduleEnabled = scheduleEnabled,
+                        startHour = selectedHour,
+                        startMinute = selectedMinute
                     )
 
                     listener?.onScenarioEdited(updatedScenario)
@@ -213,10 +326,19 @@ class EditScenarioDialog : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
+        val window = dialog?.window ?: return
+        val height = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val bounds = window.windowManager.currentWindowMetrics.bounds
+            (bounds.height() * 0.9).toInt()
+        } else {
+            @Suppress("DEPRECATION")
+            val display = window.windowManager.defaultDisplay
+            val size = Point()
+            @Suppress("DEPRECATION")
+            display.getRealSize(size)
+            (size.y * 0.9).toInt()
+        }
+        window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, height)
     }
 
     override fun onDestroyView() {

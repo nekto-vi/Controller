@@ -4,10 +4,6 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.ev.data.weather.WeatherData
 
-/**
- * Кэш ответа API погоды (офлайн-режим, Room).
- * [cacheKey] — уникальный ключ: город или координаты + язык.
- */
 @Entity(tableName = "weather_cache")
 data class WeatherCacheEntity(
     @PrimaryKey val cacheKey: String,

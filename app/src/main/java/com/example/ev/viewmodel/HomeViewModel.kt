@@ -160,9 +160,6 @@ class HomeViewModel(
         _weatherError.value = null
     }
 
-    /**
-     * Сеть пропала: показываем сообщение, но оставляем последние успешные данные погоды.
-     */
     fun reportNetworkLost(message: String) {
         _weatherError.value = message
     }

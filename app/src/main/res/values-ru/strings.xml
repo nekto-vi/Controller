@@ -72,6 +72,11 @@
     <string name="enable_schedule">Включить ежедневное расписание</string>
     <string name="schedule_time">Время запуска</string>
     <string name="choose_time">Выбрать время</string>
+    <string name="scenario_image">Фото сценария</string>
+    <string name="scenario_image_preview">Превью фото сценария</string>
+    <string name="choose_image">Выбрать фото</string>
+    <string name="remove_image">Удалить фото</string>
+    <string name="scenario_image_actions_title">Фото сценария</string>
     <string name="scenario_notification_channel_name">Активация сценариев</string>
     <string name="scenario_notification_channel_description">Уведомления при запуске сценариев по расписанию</string>
     <string name="scenario_activated_title">Сценарий активирован</string>

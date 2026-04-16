@@ -12,5 +12,5 @@ interface WeatherCacheDao {
     suspend fun getByKey(key: String): WeatherCacheEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(entity: WeatherCacheEntity)
+    suspend fun insert(entity: WeatherCacheEntity): Long
 }

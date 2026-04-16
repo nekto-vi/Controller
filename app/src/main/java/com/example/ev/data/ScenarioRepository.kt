@@ -16,6 +16,7 @@ class ScenarioRepository(context: Context) {
             val name = prefs.getString("scenario_${id}_name", "") ?: ""
             val roomKeys = prefs.getStringSet("scenario_${id}_rooms", setOf())?.toList() ?: listOf()
             val temp = prefs.getInt("scenario_${id}_temp", 22)
+            val imageUri = prefs.getString("scenario_${id}_image_uri", null)
             val scheduleEnabled = prefs.getBoolean("scenario_${id}_schedule_enabled", false)
             val startHour = prefs.getInt("scenario_${id}_start_hour", 9)
             val startMinute = prefs.getInt("scenario_${id}_start_minute", 0)
@@ -26,6 +27,7 @@ class ScenarioRepository(context: Context) {
                         name = name,
                         rooms = roomKeys,
                         temperature = temp,
+                        imageUri = imageUri,
                         scheduleEnabled = scheduleEnabled,
                         startHour = startHour,
                         startMinute = startMinute
@@ -45,6 +47,7 @@ class ScenarioRepository(context: Context) {
             .putString("scenario_${scenario.id}_name", scenario.name)
             .putStringSet("scenario_${scenario.id}_rooms", scenario.rooms.toSet())
             .putInt("scenario_${scenario.id}_temp", scenario.temperature)
+            .putString("scenario_${scenario.id}_image_uri", scenario.imageUri)
             .putBoolean("scenario_${scenario.id}_schedule_enabled", scenario.scheduleEnabled)
             .putInt("scenario_${scenario.id}_start_hour", scenario.startHour)
             .putInt("scenario_${scenario.id}_start_minute", scenario.startMinute)
@@ -64,6 +67,7 @@ class ScenarioRepository(context: Context) {
             .remove("scenario_${scenarioId}_name")
             .remove("scenario_${scenarioId}_rooms")
             .remove("scenario_${scenarioId}_temp")
+            .remove("scenario_${scenarioId}_image_uri")
             .remove("scenario_${scenarioId}_schedule_enabled")
             .remove("scenario_${scenarioId}_start_hour")
             .remove("scenario_${scenarioId}_start_minute")

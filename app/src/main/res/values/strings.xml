@@ -72,6 +72,11 @@
     <string name="enable_schedule">Enable daily schedule</string>
     <string name="schedule_time">Start time</string>
     <string name="choose_time">Choose time</string>
+    <string name="scenario_image">Scenario image</string>
+    <string name="scenario_image_preview">Scenario image preview</string>
+    <string name="choose_image">Choose image</string>
+    <string name="remove_image">Remove image</string>
+    <string name="scenario_image_actions_title">Scenario photo</string>
     <string name="scenario_notification_channel_name">Scenario activations</string>
     <string name="scenario_notification_channel_description">Notifications when scheduled scenarios activate</string>
     <string name="scenario_activated_title">Scenario activated</string>

@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase / Google Services — ключи и id приложения; держите локально, не пушьте в публичный Git
+app/google-services.json

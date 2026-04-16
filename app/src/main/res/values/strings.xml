@@ -69,6 +69,17 @@
     <string name="temp_range_cool">Cool (16-20°C)</string>
     <string name="temp_range_comfort">Comfort (21-24°C)</string>
     <string name="temp_range_warm">Warm (25-30°C)</string>
+    <string name="enable_schedule">Enable daily schedule</string>
+    <string name="schedule_time">Start time</string>
+    <string name="choose_time">Choose time</string>
+    <string name="scenario_notification_channel_name">Scenario activations</string>
+    <string name="scenario_notification_channel_description">Notifications when scheduled scenarios activate</string>
+    <string name="scenario_activated_title">Scenario activated</string>
+    <string name="scenario_activated_message">Scenario \"%1$s\" is now active</string>
+    <string name="scenario_default_name">Unnamed scenario</string>
+    <string name="exact_alarm_permission_title">Enable precise schedule</string>
+    <string name="exact_alarm_permission_message">Allow exact alarms in system settings so scheduled scenario notifications can trigger on time when the app is closed.</string>
+    <string name="open_settings">Open settings</string>
 
     <string name="weather_icon">Weather icon</string>
     <string name="loading_weather">Loading weather...</string>

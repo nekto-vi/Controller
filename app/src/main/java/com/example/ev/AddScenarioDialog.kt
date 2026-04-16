@@ -1,6 +1,7 @@
 package com.example.ev
 
 import android.app.Dialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,6 +13,7 @@ import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ev.databinding.ScenarioAddBinding
+import java.util.Locale
 
 class AddScenarioDialog : DialogFragment() {
 
@@ -22,6 +24,9 @@ class AddScenarioDialog : DialogFragment() {
     private val selectedRoomKeys = mutableListOf<String>()
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
+    private var scheduleEnabled = false
+    private var selectedHour = 9
+    private var selectedMinute = 0
 
     interface OnScenarioAddedListener {
         fun onScenarioAdded(scenario: Scenario)
@@ -50,6 +55,7 @@ class AddScenarioDialog : DialogFragment() {
         setupRoomSpinner()
         setupSelectedRoomsRecyclerView()
         setupTemperatureControls()
+        setupScheduleControls()
         setupButtons()
         setupKeyboardHiding()
         updateEmptyState()
@@ -63,6 +69,9 @@ class AddScenarioDialog : DialogFragment() {
         binding.roomsLabel.text = getString(R.string.select_rooms)
         binding.selectedRoomsTitle.text = getString(R.string.selected_rooms)
         binding.temperatureLabel.text = getString(R.string.temperature)
+        binding.scheduleSwitch.text = getString(R.string.enable_schedule)
+        binding.scheduleTimeLabel.text = getString(R.string.schedule_time)
+        binding.chooseTimeButton.text = getString(R.string.choose_time)
         binding.addRoomButton.text = getString(R.string.add)
         binding.addScenarioButton.text = getString(R.string.add_scenario)
     }
@@ -114,6 +123,45 @@ class AddScenarioDialog : DialogFragment() {
         binding.temperatureValue.text = "$currentTemperature°C"
     }
 
+    private fun setupScheduleControls() {
+        updateScheduleTimeDisplay()
+        updateScheduleViewsState()
+
+        binding.scheduleSwitch.setOnCheckedChangeListener { _, isChecked ->
+            scheduleEnabled = isChecked
+            updateScheduleViewsState()
+        }
+
+        binding.chooseTimeButton.setOnClickListener {
+            TimePickerDialog(
+                requireContext(),
+                { _, hourOfDay, minute ->
+                    selectedHour = hourOfDay
+                    selectedMinute = minute
+                    updateScheduleTimeDisplay()
+                },
+                selectedHour,
+                selectedMinute,
+                true
+            ).show()
+        }
+    }
+
+    private fun updateScheduleViewsState() {
+        binding.scheduleTimeLabel.isEnabled = scheduleEnabled
+        binding.scheduleTimeValue.isEnabled = scheduleEnabled
+        binding.chooseTimeButton.isEnabled = scheduleEnabled
+    }
+
+    private fun updateScheduleTimeDisplay() {
+        binding.scheduleTimeValue.text = String.format(
+            Locale.getDefault(),
+            "%02d:%02d",
+            selectedHour,
+            selectedMinute
+        )
+    }
+
     private fun setupButtons() {
         binding.addRoomButton.setOnClickListener {
             hideKeyboard()
@@ -152,7 +200,10 @@ class AddScenarioDialog : DialogFragment() {
                     val scenario = Scenario(
                         name = scenarioName,
                         rooms = selectedRoomKeys.toList(), // Save keys, not display names
-                        temperature = currentTemperature
+                        temperature = currentTemperature,
+                        scheduleEnabled = scheduleEnabled,
+                        startHour = selectedHour,
+                        startMinute = selectedMinute
                     )
 
                     listener?.onScenarioAdded(scenario)

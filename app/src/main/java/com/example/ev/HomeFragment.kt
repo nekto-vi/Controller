@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.ev.data.ScenarioRepository
 import com.example.ev.data.WeatherRepository
 import com.example.ev.network.NetworkConnectivity
+import com.example.ev.notifications.ScenarioScheduleManager
 import com.example.ev.viewmodel.HomeViewModel
 import com.example.ev.viewmodel.HomeViewModelFactory
 import com.example.ev.viewmodel.HomeViewModel.SortMode
@@ -483,6 +484,7 @@ class HomeFragment : Fragment() {
             dialog.setOnScenarioAddedListener(object : AddScenarioDialog.OnScenarioAddedListener {
                 override fun onScenarioAdded(scenario: Scenario) {
                     viewModel.addScenario(scenario)
+                    ScenarioScheduleManager.scheduleScenario(requireContext(), scenario)
                 }
             })
             dialog.show(parentFragmentManager, "AddScenarioDialog")
@@ -513,6 +515,7 @@ class HomeFragment : Fragment() {
         dialog.setOnScenarioEditedListener(object : EditScenarioDialog.OnScenarioEditedListener {
             override fun onScenarioEdited(updatedScenario: Scenario) {
                 viewModel.updateScenario(updatedScenario)
+                ScenarioScheduleManager.scheduleScenario(requireContext(), updatedScenario)
                 Toast.makeText(requireContext(), getString(R.string.scenario_updated), Toast.LENGTH_SHORT).show()
             }
 
@@ -528,6 +531,7 @@ class HomeFragment : Fragment() {
             .setTitle(getString(R.string.delete_scenario_title))
             .setMessage(getString(R.string.delete_scenario_message, scenario.name))
             .setPositiveButton(getString(R.string.delete)) { _, _ ->
+                ScenarioScheduleManager.cancelScenario(requireContext(), scenario.id)
                 viewModel.deleteScenario(scenario.id)
                 Toast.makeText(requireContext(), getString(R.string.scenario_deleted), Toast.LENGTH_SHORT).show()
             }

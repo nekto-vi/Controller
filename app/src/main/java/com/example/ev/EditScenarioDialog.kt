@@ -1,6 +1,7 @@
 package com.example.ev
 
 import android.app.Dialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,6 +13,7 @@ import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.ev.databinding.ScenarioAddBinding
+import java.util.Locale
 
 class EditScenarioDialog : DialogFragment() {
 
@@ -23,6 +25,9 @@ class EditScenarioDialog : DialogFragment() {
     private val selectedRoomKeys = mutableListOf<String>()
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
+    private var scheduleEnabled = false
+    private var selectedHour = 9
+    private var selectedMinute = 0
 
     interface OnScenarioEditedListener {
         fun onScenarioEdited(scenario: Scenario)
@@ -57,6 +62,7 @@ class EditScenarioDialog : DialogFragment() {
         setupRoomSpinner()
         setupSelectedRoomsRecyclerView()
         setupTemperatureControls()
+        setupScheduleControls()
         setupButtons()
         setupKeyboardHiding()
         updateEmptyState()
@@ -68,6 +74,9 @@ class EditScenarioDialog : DialogFragment() {
         selectedRoomKeys.clear()
         selectedRoomKeys.addAll(scenario.rooms)
         currentTemperature = scenario.temperature
+        scheduleEnabled = scenario.scheduleEnabled
+        selectedHour = scenario.startHour
+        selectedMinute = scenario.startMinute
     }
 
     private fun updateLocalizedTexts() {
@@ -77,6 +86,9 @@ class EditScenarioDialog : DialogFragment() {
         binding.roomsLabel.text = getString(R.string.select_rooms)
         binding.selectedRoomsTitle.text = getString(R.string.selected_rooms)
         binding.temperatureLabel.text = getString(R.string.temperature)
+        binding.scheduleSwitch.text = getString(R.string.enable_schedule)
+        binding.scheduleTimeLabel.text = getString(R.string.schedule_time)
+        binding.chooseTimeButton.text = getString(R.string.choose_time)
         binding.addRoomButton.text = getString(R.string.add)
         binding.addScenarioButton.text = getString(R.string.save)
     }
@@ -128,6 +140,46 @@ class EditScenarioDialog : DialogFragment() {
         binding.temperatureValue.text = "$currentTemperature°C"
     }
 
+    private fun setupScheduleControls() {
+        binding.scheduleSwitch.isChecked = scheduleEnabled
+        updateScheduleTimeDisplay()
+        updateScheduleViewsState()
+
+        binding.scheduleSwitch.setOnCheckedChangeListener { _, isChecked ->
+            scheduleEnabled = isChecked
+            updateScheduleViewsState()
+        }
+
+        binding.chooseTimeButton.setOnClickListener {
+            TimePickerDialog(
+                requireContext(),
+                { _, hourOfDay, minute ->
+                    selectedHour = hourOfDay
+                    selectedMinute = minute
+                    updateScheduleTimeDisplay()
+                },
+                selectedHour,
+                selectedMinute,
+                true
+            ).show()
+        }
+    }
+
+    private fun updateScheduleViewsState() {
+        binding.scheduleTimeLabel.isEnabled = scheduleEnabled
+        binding.scheduleTimeValue.isEnabled = scheduleEnabled
+        binding.chooseTimeButton.isEnabled = scheduleEnabled
+    }
+
+    private fun updateScheduleTimeDisplay() {
+        binding.scheduleTimeValue.text = String.format(
+            Locale.getDefault(),
+            "%02d:%02d",
+            selectedHour,
+            selectedMinute
+        )
+    }
+
     private fun setupButtons() {
         binding.addRoomButton.setOnClickListener {
             hideKeyboard()
@@ -166,7 +218,10 @@ class EditScenarioDialog : DialogFragment() {
                     val updatedScenario = scenario.copy(
                         name = scenarioName,
                         rooms = selectedRoomKeys.toList(),
-                        temperature = currentTemperature
+                        temperature = currentTemperature,
+                        scheduleEnabled = scheduleEnabled,
+                        startHour = selectedHour,
+                        startMinute = selectedMinute
                     )
 
                     listener?.onScenarioEdited(updatedScenario)

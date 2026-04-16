@@ -49,6 +49,19 @@
     <string name="delete_scenario_title">Удалить сценарий</string>
     <string name="delete_scenario_message">Вы уверены, что хотите удалить "%s"?</string>
     <string name="no_scenarios_yet">Пока нет сценариев.\nНажмите кнопку ниже, чтобы добавить первый!</string>
+    <string name="no_scenarios_found">По текущему поиску и фильтрам ничего не найдено.</string>
+    <string name="search_scenarios_hint">Поиск сценариев</string>
+    <string name="sort_date_newest">Дата: сначала новые</string>
+    <string name="sort_date_oldest">Дата: сначала старые</string>
+    <string name="sort_name_asc">Название: А-Я</string>
+    <string name="sort_name_desc">Название: Я-А</string>
+    <string name="sort_temp_asc">Температура: по возрастанию</string>
+    <string name="sort_temp_desc">Температура: по убыванию</string>
+    <string name="filter_all_rooms">Все комнаты</string>
+    <string name="filter_all_temperatures">Любая температура</string>
+    <string name="temp_range_cool">Прохладно (16-20°C)</string>
+    <string name="temp_range_comfort">Комфортно (21-24°C)</string>
+    <string name="temp_range_warm">Тепло (25-30°C)</string>
 
     <string name="weather_icon">Иконка погоды</string>
     <string name="loading_weather">Загрузка погоды...</string>

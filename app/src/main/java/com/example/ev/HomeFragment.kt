@@ -4,9 +4,14 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import android.widget.EditText
 import android.widget.Button
 import android.widget.TextView
@@ -22,6 +27,7 @@ import com.example.ev.data.WeatherRepository
 import com.example.ev.network.NetworkConnectivity
 import com.example.ev.viewmodel.HomeViewModel
 import com.example.ev.viewmodel.HomeViewModelFactory
+import com.example.ev.viewmodel.HomeViewModel.SortMode
 import java.util.Locale
 
 class HomeFragment : Fragment() {
@@ -32,8 +38,15 @@ class HomeFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var addScenarioButton: Button
     private lateinit var emptyStateText: TextView
+    private lateinit var searchInput: EditText
+    private lateinit var sortSpinner: Spinner
+    private lateinit var roomFilterSpinner: Spinner
+    private lateinit var tempFilterSpinner: Spinner
     private lateinit var scenarioAdapter: ScenarioAdapter
     private lateinit var viewModel: HomeViewModel
+    private lateinit var sortModes: List<SortMode>
+    private lateinit var roomFilterKeys: List<String?>
+    private lateinit var tempRanges: List<IntRange?>
 
     // Weather UI elements
     private lateinit var weatherContainer: View
@@ -62,6 +75,10 @@ class HomeFragment : Fragment() {
         recyclerView = view.findViewById(R.id.scenariosRecyclerView)
         addScenarioButton = view.findViewById(R.id.addScenarioButton)
         emptyStateText = view.findViewById(R.id.emptyStateText)
+        searchInput = view.findViewById(R.id.searchInput)
+        sortSpinner = view.findViewById(R.id.sortSpinner)
+        roomFilterSpinner = view.findViewById(R.id.roomFilterSpinner)
+        tempFilterSpinner = view.findViewById(R.id.tempFilterSpinner)
 
         // Weather views
         weatherContainer = view.findViewById(R.id.weatherContainer)
@@ -77,6 +94,7 @@ class HomeFragment : Fragment() {
 
         setupViewModel()
         setupRecyclerView()
+        setupDataToolsControls()
         setupObservers()
         setupAddButton()
         setupLocationPicker()
@@ -166,10 +184,107 @@ class HomeFragment : Fragment() {
         recyclerView.adapter = scenarioAdapter
     }
 
+    private fun setupDataToolsControls() {
+        setupSearchInput()
+        setupSortSpinner()
+        setupRoomFilterSpinner()
+        setupTemperatureSpinner()
+    }
+
+    private fun setupSearchInput() {
+        searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.setSearchQuery(s?.toString().orEmpty())
+            }
+        })
+    }
+
+    private fun setupSortSpinner() {
+        sortModes = listOf(
+            SortMode.DATE_DESC,
+            SortMode.DATE_ASC,
+            SortMode.NAME_ASC,
+            SortMode.NAME_DESC,
+            SortMode.TEMPERATURE_ASC,
+            SortMode.TEMPERATURE_DESC
+        )
+
+        val sortLabels = listOf(
+            getString(R.string.sort_date_newest),
+            getString(R.string.sort_date_oldest),
+            getString(R.string.sort_name_asc),
+            getString(R.string.sort_name_desc),
+            getString(R.string.sort_temp_asc),
+            getString(R.string.sort_temp_desc)
+        )
+
+        sortSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, sortLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+
+        sortSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                viewModel.setSortMode(sortModes[position])
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+    }
+
+    private fun setupRoomFilterSpinner() {
+        val roomOptions = RoomMapper.getAvailableRooms(requireContext())
+        roomFilterKeys = listOf(null) + roomOptions.map { it.first }
+        val roomLabels = listOf(getString(R.string.filter_all_rooms)) + roomOptions.map { it.second }
+
+        roomFilterSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, roomLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+
+        roomFilterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                viewModel.setRoomFilter(roomFilterKeys[position])
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+    }
+
+    private fun setupTemperatureSpinner() {
+        tempRanges = listOf(
+            null,
+            16..20,
+            21..24,
+            25..30
+        )
+        val tempLabels = listOf(
+            getString(R.string.filter_all_temperatures),
+            getString(R.string.temp_range_cool),
+            getString(R.string.temp_range_comfort),
+            getString(R.string.temp_range_warm)
+        )
+
+        tempFilterSpinner.adapter =
+            ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, tempLabels).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+
+        tempFilterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                viewModel.setTemperatureFilter(tempRanges[position])
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+    }
+
     private fun setupObservers() {
         viewModel.scenarios.observe(viewLifecycleOwner) { scenarios ->
             scenarioAdapter.updateScenarios(scenarios)
-            updateEmptyState(scenarios.isEmpty())
+            updateEmptyState(scenarios.isEmpty(), viewModel.hasActiveFiltersOrSearch())
         }
 
         viewModel.error.observe(viewLifecycleOwner) { error ->
@@ -409,11 +524,15 @@ class HomeFragment : Fragment() {
             .show()
     }
 
-    private fun updateEmptyState(isEmpty: Boolean) {
+    private fun updateEmptyState(isEmpty: Boolean, hasActiveFilters: Boolean) {
         if (isEmpty) {
             recyclerView.visibility = View.GONE
             emptyStateText.visibility = View.VISIBLE
-            emptyStateText.text = getString(R.string.no_scenarios_yet)
+            emptyStateText.text = if (hasActiveFilters) {
+                getString(R.string.no_scenarios_found)
+            } else {
+                getString(R.string.no_scenarios_yet)
+            }
         } else {
             recyclerView.visibility = View.VISIBLE
             emptyStateText.visibility = View.GONE

@@ -49,6 +49,19 @@
     <string name="delete_scenario_title">Delete Scenario</string>
     <string name="delete_scenario_message">Are you sure you want to delete "%s"?</string>
     <string name="no_scenarios_yet">No scenarios yet.\nTap the button below to add your first scenario!</string>
+    <string name="no_scenarios_found">No scenarios found for current search or filters.</string>
+    <string name="search_scenarios_hint">Search scenarios</string>
+    <string name="sort_date_newest">Date: Newest first</string>
+    <string name="sort_date_oldest">Date: Oldest first</string>
+    <string name="sort_name_asc">Name: A-Z</string>
+    <string name="sort_name_desc">Name: Z-A</string>
+    <string name="sort_temp_asc">Temperature: Low-High</string>
+    <string name="sort_temp_desc">Temperature: High-Low</string>
+    <string name="filter_all_rooms">All rooms</string>
+    <string name="filter_all_temperatures">All temperatures</string>
+    <string name="temp_range_cool">Cool (16-20°C)</string>
+    <string name="temp_range_comfort">Comfort (21-24°C)</string>
+    <string name="temp_range_warm">Warm (25-30°C)</string>
 
     <string name="weather_icon">Weather icon</string>
     <string name="loading_weather">Loading weather...</string>

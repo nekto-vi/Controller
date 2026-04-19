@@ -3,15 +3,74 @@ package com.example.ev.data
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.ev.Scenario
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 
+/**
+ * Сценарии хранятся в Cloud Firestore: `users/{uid}/scenarios/{scenarioId}`.
+ * Перед записью выполняется анонимный вход Firebase Auth (uid стабилен для установки).
+ *
+ * Один раз поднимает данные из старых SharedPreferences ("scenarios"), если облако пусто.
+ *
+ * Консоль Firebase: включить Authentication → Anonymous, Firestore → создать БД,
+ * правила — см. [firestore.rules] в корне репозитория.
+ */
 class ScenarioRepository(context: Context) {
 
-    private val prefs: SharedPreferences = context.getSharedPreferences("scenarios", Context.MODE_PRIVATE)
+    private val appContext = context.applicationContext
+    private val prefs: SharedPreferences = appContext.getSharedPreferences("scenarios", Context.MODE_PRIVATE)
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    fun getAllScenarios(): List<Scenario> {
+    private suspend fun ensureSignedIn(): String {
+        auth.currentUser?.let { user ->
+            user.getIdToken(false).await()
+            return user.uid
+        }
+        val result = auth.signInAnonymously().await()
+        val user = result.user ?: error("Firebase anonymous sign-in failed")
+        user.getIdToken(false).await()
+        return user.uid
+    }
+
+    private suspend fun scenariosCollection() =
+        db.collection(COL_USERS).document(ensureSignedIn()).collection(COL_SCENARIOS)
+
+    suspend fun getAllScenarios(): List<Scenario> {
+        val col = scenariosCollection()
+        val snapshot = col.get().await()
+        var list = snapshot.documents.mapNotNull { it.toScenario() }
+        if (list.isEmpty()) {
+            val legacy = loadLegacyFromPrefs()
+            if (legacy.isNotEmpty()) {
+                for (s in legacy) {
+                    col.document(s.id.toString()).set(s.toFirestoreMap()).await()
+                }
+                clearLegacyPrefs()
+                list = legacy
+            }
+        }
+        return list
+    }
+
+    suspend fun saveScenario(scenario: Scenario) {
+        val col = scenariosCollection()
+        col.document(scenario.id.toString()).set(scenario.toFirestoreMap()).await()
+    }
+
+    suspend fun updateScenario(scenario: Scenario) {
+        saveScenario(scenario)
+    }
+
+    suspend fun deleteScenario(scenarioId: Long) {
+        scenariosCollection().document(scenarioId.toString()).delete().await()
+    }
+
+    private fun loadLegacyFromPrefs(): List<Scenario> {
         val savedScenarios = prefs.getStringSet("scenario_ids", setOf()) ?: setOf()
         val scenarios = mutableListOf<Scenario>()
-
         for (id in savedScenarios) {
             val name = prefs.getString("scenario_${id}_name", "") ?: ""
             val roomKeys = prefs.getStringSet("scenario_${id}_rooms", setOf())?.toList() ?: listOf()
@@ -38,39 +97,53 @@ class ScenarioRepository(context: Context) {
         return scenarios
     }
 
-    fun saveScenario(scenario: Scenario) {
-        val ids = prefs.getStringSet("scenario_ids", setOf())?.toMutableSet() ?: mutableSetOf()
-        ids.add(scenario.id.toString())
-        prefs.edit().putStringSet("scenario_ids", ids).apply()
-
-        prefs.edit()
-            .putString("scenario_${scenario.id}_name", scenario.name)
-            .putStringSet("scenario_${scenario.id}_rooms", scenario.rooms.toSet())
-            .putInt("scenario_${scenario.id}_temp", scenario.temperature)
-            .putString("scenario_${scenario.id}_image_uri", scenario.imageUri)
-            .putBoolean("scenario_${scenario.id}_schedule_enabled", scenario.scheduleEnabled)
-            .putInt("scenario_${scenario.id}_start_hour", scenario.startHour)
-            .putInt("scenario_${scenario.id}_start_minute", scenario.startMinute)
-            .apply()
+    private fun clearLegacyPrefs() {
+        prefs.edit().clear().apply()
     }
 
-    fun updateScenario(scenario: Scenario) {
-        saveScenario(scenario)
+    private fun DocumentSnapshot.toScenario(): Scenario? {
+        val sid = id.takeIf { it.isNotBlank() }?.toLongOrNull() ?: return null
+        val name = getString("name") ?: return null
+        if (name.isEmpty()) return null
+        val rooms = (get("rooms") as? Iterable<*>)?.mapNotNull { it as? String } ?: emptyList()
+        val temperature = when (val t = get("temperature")) {
+            is Number -> t.toInt()
+            else -> 22
+        }
+        val imageUri = getString("imageUri")
+        val scheduleEnabled = getBoolean("scheduleEnabled") ?: false
+        val startHour = when (val h = get("startHour")) {
+            is Number -> h.toInt()
+            else -> 9
+        }
+        val startMinute = when (val m = get("startMinute")) {
+            is Number -> m.toInt()
+            else -> 0
+        }
+        return Scenario(
+            id = sid,
+            name = name,
+            rooms = rooms,
+            temperature = temperature,
+            imageUri = imageUri?.takeIf { it.isNotBlank() },
+            scheduleEnabled = scheduleEnabled,
+            startHour = startHour,
+            startMinute = startMinute
+        )
     }
 
-    fun deleteScenario(scenarioId: Long) {
-        val ids = prefs.getStringSet("scenario_ids", setOf())?.toMutableSet() ?: mutableSetOf()
-        ids.remove(scenarioId.toString())
-        prefs.edit().putStringSet("scenario_ids", ids).apply()
+    private fun Scenario.toFirestoreMap(): Map<String, Any?> = mapOf(
+        "name" to name,
+        "rooms" to rooms,
+        "temperature" to temperature,
+        "imageUri" to imageUri,
+        "scheduleEnabled" to scheduleEnabled,
+        "startHour" to startHour,
+        "startMinute" to startMinute
+    )
 
-        prefs.edit()
-            .remove("scenario_${scenarioId}_name")
-            .remove("scenario_${scenarioId}_rooms")
-            .remove("scenario_${scenarioId}_temp")
-            .remove("scenario_${scenarioId}_image_uri")
-            .remove("scenario_${scenarioId}_schedule_enabled")
-            .remove("scenario_${scenarioId}_start_hour")
-            .remove("scenario_${scenarioId}_start_minute")
-            .apply()
+    companion object {
+        private const val COL_USERS = "users"
+        private const val COL_SCENARIOS = "scenarios"
     }
 }

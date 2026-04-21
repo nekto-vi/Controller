@@ -7,6 +7,7 @@ import com.example.ev.data.local.toCacheEntity
 import com.example.ev.data.local.toWeatherData
 import com.example.ev.data.weather.WeatherData
 import com.example.ev.data.weather.OpenMeteoWeatherResponse
+import com.example.ev.data.weather.GeocodingResult
 import com.example.ev.R
 import com.example.ev.network.NetworkConnectivity
 import com.example.ev.network.RetrofitClient
@@ -41,6 +42,21 @@ class WeatherRepository(private val context: Context) {
     companion object {
         private const val CACHE_DURATION_MS = 30 * 60 * 1000 // 30 минут кэширования
         private const val DEFAULT_CITY = "Minsk"
+
+        /** Старые сборки писали это в кэш координат при сбое reverse-geocoding. */
+        internal const val LEGACY_COORD_CITY_PLACEHOLDER = "Current location"
+
+        /** Старые сборки подставляли координаты вместо города (`%1$.2f°, %2$.2f°`). */
+        private val LEGACY_COORD_NUMERIC_CITY_LABEL = Regex(
+            "^-?\\d+\\.\\d+\\s*°\\s*,\\s*-?\\d+\\.\\d+\\s*°\\s*$"
+        )
+
+        /** Подпись из кэша, которую не показываем как название места — обновляем с сервера или подменяем в UI. */
+        internal fun isGenericDeviceLocationStoredLabel(cityName: String): Boolean {
+            val t = cityName.trim()
+            if (t.equals(LEGACY_COORD_CITY_PLACEHOLDER, ignoreCase = true)) return true
+            return LEGACY_COORD_NUMERIC_CITY_LABEL.matches(t)
+        }
     }
 
     private fun offlineMessage(): String =
@@ -122,7 +138,9 @@ class WeatherRepository(private val context: Context) {
                         val cityLabel = listOfNotNull(location.name, location.country).joinToString(", ")
                         val weatherData = mapToWeatherData(
                             response = weatherResponse,
-                            cityLabel = cityLabel.ifBlank { location.name }
+                            cityLabel = cityLabel.ifBlank {
+                                location.name?.trim().orEmpty().ifBlank { city }
+                            }
                         )
                         cacheDao.insert(weatherData.toCacheEntity(cacheKey))
                         return@withContext Result.success(weatherData)
@@ -156,7 +174,9 @@ class WeatherRepository(private val context: Context) {
                 val cacheKey = coordCacheKey(latitude, longitude, languageCode)
                 val cached = cacheDao.getByKey(cacheKey)?.toWeatherData()
                 if (cached != null && !isCacheExpired(cacheKey)) {
-                    return@withContext Result.success(cached)
+                    if (!isGenericDeviceLocationStoredLabel(cached.cityName)) {
+                        return@withContext Result.success(cached)
+                    }
                 }
 
                 if (!NetworkConnectivity.isNetworkAvailable(context)) {
@@ -180,21 +200,12 @@ class WeatherRepository(private val context: Context) {
                 val weatherBody = weatherResponse.body()
                     ?: return@withContext Result.failure(Exception("Empty response"))
 
-                val reverseResponse = geocodingApiService.reverseGeocode(
-                    latitude = latitude,
-                    longitude = longitude,
-                    language = languageCode
-                )
-                val location = reverseResponse.body()?.results?.firstOrNull()
-                val cityLabel = if (location != null) {
-                    listOfNotNull(location.name, location.country).joinToString(", ")
-                } else {
-                    "Current location"
-                }
+                val location = resolveReverseGeocode(latitude, longitude, languageCode)
+                val cityLabel = placeLabelFromGeocode(location)
 
                 val weatherData = mapToWeatherData(
                     response = weatherBody,
-                    cityLabel = cityLabel.ifBlank { "Current location" }
+                    cityLabel = cityLabel
                 )
                 cacheDao.insert(weatherData.toCacheEntity(cacheKey))
                 return@withContext Result.success(weatherData)
@@ -264,6 +275,44 @@ class WeatherRepository(private val context: Context) {
         return when (LocaleHelper.getLanguage(context)) {
             "ru" -> "ru"
             else -> "en"
+        }
+    }
+
+    private suspend fun resolveReverseGeocode(
+        latitude: Double,
+        longitude: Double,
+        languageCode: String
+    ): GeocodingResult? {
+        suspend fun attempt(lang: String): GeocodingResult? {
+            val resp = geocodingApiService.reverseGeocode(
+                latitude = latitude,
+                longitude = longitude,
+                language = lang
+            )
+            if (!resp.isSuccessful) return null
+            return resp.body()?.results?.firstOrNull()
+        }
+        attempt(languageCode)?.let { return it }
+        if (languageCode != "en") {
+            attempt("en")?.let { return it }
+        }
+        return null
+    }
+
+    private fun placeLabelFromGeocode(location: GeocodingResult?): String {
+        val name = location?.name?.trim().orEmpty()
+        val admin = location?.admin1?.trim().orEmpty()
+        val country = location?.country?.trim().orEmpty()
+        val label = when {
+            name.isNotEmpty() && country.isNotEmpty() -> "$name, $country"
+            name.isNotEmpty() -> name
+            admin.isNotEmpty() && country.isNotEmpty() -> "$admin, $country"
+            admin.isNotEmpty() -> admin
+            country.isNotEmpty() -> country
+            else -> ""
+        }
+        return label.ifBlank {
+            context.getString(R.string.weather_city_current_location)
         }
     }
 

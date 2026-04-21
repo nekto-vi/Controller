@@ -1,9 +1,14 @@
 package com.example.ev
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Bundle
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -16,7 +21,9 @@ import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -29,6 +36,13 @@ import com.example.ev.notifications.ScenarioScheduleManager
 import com.example.ev.viewmodel.HomeViewModel
 import com.example.ev.viewmodel.HomeViewModelFactory
 import com.example.ev.viewmodel.HomeViewModel.SortMode
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import java.util.Locale
 
 class HomeFragment : Fragment() {
@@ -60,8 +74,29 @@ class HomeFragment : Fragment() {
     private lateinit var weatherLoadingText: TextView
     private lateinit var weatherErrorText: TextView
     private lateinit var refreshWeatherButton: Button
-    private var selectedCityOverride: String? = FALLBACK_CITY
+    /** true — погода по GPS; false — выбранный город вручную */
+    private var useDeviceLocation: Boolean = true
+    private var selectedCityOverride: String? = null
     private var selectedCoordinatesOverride: Pair<Double, Double>? = null
+
+    private val requestLocationPermissions =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            val fine = result[Manifest.permission.ACCESS_FINE_LOCATION] == true
+            val coarse = result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+            if (fine || coarse) {
+                fetchLocationAndLoadWeather()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.location_permission_required),
+                    Toast.LENGTH_LONG
+                ).show()
+                switchToFallbackCityWeather()
+            }
+        }
+
+    /** Активный one-shot requestLocationUpdates; снимаем в onDestroyView. */
+    private var pendingLocationCallback: LocationCallback? = null
 
     private var connectivityCallback: ConnectivityManager.NetworkCallback? = null
     /** null — ещё не инициализировали; false/true — последнее известное состояние сети */
@@ -101,6 +136,11 @@ class HomeFragment : Fragment() {
         setupRefreshButton()
 
         return view
+    }
+
+    override fun onDestroyView() {
+        cancelPendingLocationUpdates()
+        super.onDestroyView()
     }
 
     override fun onResume() {
@@ -332,16 +372,25 @@ class HomeFragment : Fragment() {
         }
     }
 
+    /** Кэш/старые сборки могли класть в cityName координаты или «Current location». */
+    private fun resolvedWeatherPlaceLabel(storedCityName: String): String {
+        val t = storedCityName.trim()
+        if (t.isEmpty() || WeatherRepository.isGenericDeviceLocationStoredLabel(t)) {
+            return getString(R.string.weather_city_current_location)
+        }
+        return t
+    }
+
     private fun updateWeatherUI(weather: com.example.ev.data.weather.WeatherData) {
         weatherContainer.isVisible = true
         weatherLoadingText.isVisible = false
         // Сообщение об офлайне (кэш без сети) управляется weatherError
 
-        val selectedCoordinates = selectedCoordinatesOverride
-        weatherLocationText.text = if (selectedCoordinates != null && !selectedCityOverride.isNullOrBlank()) {
-            selectedCityOverride
-        } else {
-            weather.cityName
+        weatherLocationText.text = when {
+            useDeviceLocation -> resolvedWeatherPlaceLabel(weather.cityName)
+            selectedCoordinatesOverride != null && !selectedCityOverride.isNullOrBlank() ->
+                selectedCityOverride!!
+            else -> resolvedWeatherPlaceLabel(weather.cityName)
         }
         temperatureText.text = getString(R.string.temperature_format, weather.temperature.toInt())
 
@@ -364,12 +413,16 @@ class HomeFragment : Fragment() {
 
     private fun setupRefreshButton() {
         refreshWeatherButton.setOnClickListener {
-            val selectedCoordinates = selectedCoordinatesOverride
-            if (selectedCoordinates != null) {
-                viewModel.refreshWeatherByCoordinates(selectedCoordinates.first, selectedCoordinates.second)
+            if (useDeviceLocation) {
+                requestLocationAndRefresh()
             } else {
-                val selectedCity = selectedCityOverride
-                viewModel.refreshWeather(selectedCity ?: FALLBACK_CITY)
+                val selectedCoordinates = selectedCoordinatesOverride
+                if (selectedCoordinates != null) {
+                    viewModel.refreshWeatherByCoordinates(selectedCoordinates.first, selectedCoordinates.second)
+                } else {
+                    val selectedCity = selectedCityOverride
+                    viewModel.refreshWeather(selectedCity ?: FALLBACK_CITY)
+                }
             }
             Toast.makeText(requireContext(), getString(R.string.refreshing_weather), Toast.LENGTH_SHORT).show()
         }
@@ -392,6 +445,7 @@ class HomeFragment : Fragment() {
                 53.9006 to 30.3317  // Mogilev
             )
             val options = arrayOf(
+                getString(R.string.weather_city_current_location),
                 cityLabels[0],
                 cityLabels[1],
                 cityLabels[2],
@@ -404,18 +458,25 @@ class HomeFragment : Fragment() {
                 .setTitle(getString(R.string.weather_choose_city_title))
                 .setItems(options) { _, which ->
                     when (which) {
-                        0, 1, 2, 3, 4 -> {
-                            selectedCoordinatesOverride = cityCoordinates[which]
+                        0 -> {
+                            useDeviceLocation = true
+                            selectedCityOverride = null
+                            requestLocationAndRefresh()
+                        }
+                        in 1..5 -> {
+                            useDeviceLocation = false
+                            val idx = which - 1
+                            selectedCoordinatesOverride = cityCoordinates[idx]
                             selectedCityOverride = getString(
                                 R.string.weather_city_with_country_format,
-                                cityLabels[which]
+                                cityLabels[idx]
                             )
                             viewModel.refreshWeatherByCoordinates(
-                                cityCoordinates[which].first,
-                                cityCoordinates[which].second
+                                cityCoordinates[idx].first,
+                                cityCoordinates[idx].second
                             )
                         }
-                        5 -> showCustomCityDialog()
+                        6 -> showCustomCityDialog()
                     }
                 }
                 .show()
@@ -433,6 +494,7 @@ class HomeFragment : Fragment() {
             .setPositiveButton(getString(R.string.save)) { _, _ ->
                 val city = input.text.toString().trim()
                 if (city.isNotEmpty()) {
+                    useDeviceLocation = false
                     selectedCoordinatesOverride = null
                     selectedCityOverride = city
                     viewModel.refreshWeather(city)
@@ -444,7 +506,11 @@ class HomeFragment : Fragment() {
 
     private fun setWeatherPlaceholders() {
         if (weatherLocationText.text.isNullOrBlank() || weatherLocationText.text == "--") {
-            weatherLocationText.text = getString(R.string.weather_city_minsk)
+            weatherLocationText.text = if (useDeviceLocation) {
+                getString(R.string.weather_city_current_location)
+            } else {
+                getString(R.string.weather_city_minsk)
+            }
         }
         temperatureText.text = "--°C"
         conditionText.text = "--"
@@ -469,13 +535,189 @@ class HomeFragment : Fragment() {
     }
 
     private fun refreshWeatherForCurrentSelection() {
+        if (useDeviceLocation) {
+            requestLocationAndRefresh()
+        } else {
+            val selectedCoordinates = selectedCoordinatesOverride
+            if (selectedCoordinates != null) {
+                viewModel.refreshWeatherByCoordinates(selectedCoordinates.first, selectedCoordinates.second)
+            } else {
+                val selectedCity = selectedCityOverride
+                viewModel.refreshWeather(selectedCity ?: FALLBACK_CITY)
+            }
+        }
+    }
+
+    private fun requestLocationAndRefresh() {
+        if (!useDeviceLocation) {
+            refreshWeatherForManualSelection()
+            return
+        }
+        val ctx = requireContext()
+        when {
+            hasLocationPermission(ctx) -> fetchLocationAndLoadWeather()
+            else -> requestLocationPermissions.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    private fun hasLocationPermission(ctx: Context): Boolean {
+        val fine = ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(ctx, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        return fine || coarse
+    }
+
+    private fun isDeviceLocationEnabled(): Boolean {
+        val lm = requireContext().getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+            lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun cancelPendingLocationUpdates() {
+        val cb = pendingLocationCallback ?: return
+        pendingLocationCallback = null
+        runCatching {
+            LocationServices.getFusedLocationProviderClient(requireContext().applicationContext)
+                .removeLocationUpdates(cb)
+        }
+    }
+
+    private fun refreshWeatherForManualSelection() {
         val selectedCoordinates = selectedCoordinatesOverride
         if (selectedCoordinates != null) {
             viewModel.refreshWeatherByCoordinates(selectedCoordinates.first, selectedCoordinates.second)
         } else {
-            val selectedCity = selectedCityOverride
-            viewModel.refreshWeather(selectedCity ?: FALLBACK_CITY)
+            viewModel.refreshWeather(selectedCityOverride ?: FALLBACK_CITY)
         }
+    }
+
+    private fun fetchLocationAndLoadWeather() {
+        if (!isAdded) return
+        val ctx = requireContext()
+        cancelPendingLocationUpdates()
+
+        if (!isDeviceLocationEnabled()) {
+            Toast.makeText(ctx, getString(R.string.location_services_disabled), Toast.LENGTH_LONG).show()
+            switchToFallbackCityWeather()
+            return
+        }
+
+        val client = LocationServices.getFusedLocationProviderClient(ctx)
+
+        fun onLocationFailed() {
+            if (!isAdded) return
+            Toast.makeText(ctx, getString(R.string.location_unavailable), Toast.LENGTH_SHORT).show()
+            switchToFallbackCityWeather()
+        }
+
+        fun applyFromLocation(loc: Location) {
+            if (!isAdded) return
+            cancelPendingLocationUpdates()
+            applyDeviceLocationWeather(loc.latitude, loc.longitude)
+        }
+
+        client.lastLocation
+            .addOnSuccessListener { loc ->
+                if (!isAdded) return@addOnSuccessListener
+                if (loc != null) {
+                    applyFromLocation(loc)
+                } else {
+                    requestFreshCurrentLocation(client, { applyFromLocation(it) }) {
+                        requestSingleLocationUpdate(client, { applyFromLocation(it) }, ::onLocationFailed)
+                    }
+                }
+            }
+            .addOnFailureListener {
+                if (!isAdded) return@addOnFailureListener
+                requestFreshCurrentLocation(client, { applyFromLocation(it) }) {
+                    requestSingleLocationUpdate(client, { applyFromLocation(it) }, ::onLocationFailed)
+                }
+            }
+    }
+
+    /** Одноразовый «свежий» фикс (часто lastLocation пуст при холодном старте). */
+    private fun requestFreshCurrentLocation(
+        client: FusedLocationProviderClient,
+        onSuccess: (Location) -> Unit,
+        onStillNullOrError: () -> Unit
+    ) {
+        if (!isAdded) return
+        val cts = CancellationTokenSource()
+        client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
+            .addOnSuccessListener { current ->
+                if (!isAdded) return@addOnSuccessListener
+                if (current != null) onSuccess(current)
+                else onStillNullOrError()
+            }
+            .addOnFailureListener {
+                if (!isAdded) return@addOnFailureListener
+                onStillNullOrError()
+            }
+    }
+
+    /** Резерв: подписка до первого фикса или таймаут (эмулятор / медленный GPS). */
+    private fun requestSingleLocationUpdate(
+        client: FusedLocationProviderClient,
+        onSuccess: (Location) -> Unit,
+        onFailed: () -> Unit
+    ) {
+        if (!isAdded) return
+        cancelPendingLocationUpdates()
+
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000L)
+            .setMinUpdateIntervalMillis(500L)
+            .setMaxUpdates(1)
+            .setWaitForAccurateLocation(false)
+            .build()
+
+        var completed = false
+        val callback = object : LocationCallback() {
+            override fun onLocationResult(result: LocationResult) {
+                if (completed || !isAdded) return
+                val loc = result.lastLocation
+                if (loc != null) {
+                    completed = true
+                    cancelPendingLocationUpdates()
+                    onSuccess(loc)
+                }
+            }
+        }
+        pendingLocationCallback = callback
+        try {
+            client.requestLocationUpdates(request, callback, Looper.getMainLooper())
+        } catch (_: SecurityException) {
+            pendingLocationCallback = null
+            if (isAdded) onFailed()
+            return
+        }
+
+        view?.postDelayed({
+            if (!completed && isAdded) {
+                completed = true
+                cancelPendingLocationUpdates()
+                onFailed()
+            }
+        }, 25_000L)
+    }
+
+    private fun switchToFallbackCityWeather() {
+        useDeviceLocation = false
+        selectedCoordinatesOverride = null
+        selectedCityOverride = FALLBACK_CITY
+        viewModel.refreshWeather(FALLBACK_CITY)
+    }
+
+    private fun applyDeviceLocationWeather(latitude: Double, longitude: Double) {
+        useDeviceLocation = true
+        selectedCoordinatesOverride = null
+        selectedCityOverride = null
+        viewModel.refreshWeatherByCoordinates(latitude, longitude)
     }
 
     private fun setupAddButton() {

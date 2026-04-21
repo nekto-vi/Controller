@@ -64,7 +64,6 @@ class HomeFragment : Fragment() {
     private lateinit var roomLabels: List<String>
     private lateinit var tempLabels: List<String>
 
-    // Weather UI elements
     private lateinit var weatherContainer: View
     private lateinit var weatherIcon: TextView
     private lateinit var weatherLocationText: TextView
@@ -74,7 +73,6 @@ class HomeFragment : Fragment() {
     private lateinit var weatherLoadingText: TextView
     private lateinit var weatherErrorText: TextView
     private lateinit var refreshWeatherButton: Button
-    /** true — погода по GPS; false — выбранный город вручную */
     private var useDeviceLocation: Boolean = true
     private var selectedCityOverride: String? = null
     private var selectedCoordinatesOverride: Pair<Double, Double>? = null
@@ -95,11 +93,9 @@ class HomeFragment : Fragment() {
             }
         }
 
-    /** Активный one-shot requestLocationUpdates; снимаем в onDestroyView. */
     private var pendingLocationCallback: LocationCallback? = null
 
     private var connectivityCallback: ConnectivityManager.NetworkCallback? = null
-    /** null — ещё не инициализировали; false/true — последнее известное состояние сети */
     private var lastNetworkAvailable: Boolean? = null
 
     override fun onCreateView(
@@ -108,14 +104,12 @@ class HomeFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_home, container, false)
 
-        // Initialize views
         recyclerView = view.findViewById(R.id.scenariosRecyclerView)
         addScenarioButton = view.findViewById(R.id.addScenarioButton)
         emptyStateText = view.findViewById(R.id.emptyStateText)
         searchInput = view.findViewById(R.id.searchInput)
         filterButton = view.findViewById(R.id.filterButton)
 
-        // Weather views
         weatherContainer = view.findViewById(R.id.weatherContainer)
         weatherIcon = view.findViewById(R.id.weatherIcon)
         weatherLocationText = view.findViewById(R.id.weatherLocationText)
@@ -346,7 +340,6 @@ class HomeFragment : Fragment() {
             }
         }
 
-        // Weather observers
         viewModel.weather.observe(viewLifecycleOwner) { weatherData ->
             weatherData?.let {
                 updateWeatherUI(it)
@@ -372,7 +365,6 @@ class HomeFragment : Fragment() {
         }
     }
 
-    /** Кэш/старые сборки могли класть в cityName координаты или «Current location». */
     private fun resolvedWeatherPlaceLabel(storedCityName: String): String {
         val t = storedCityName.trim()
         if (t.isEmpty() || WeatherRepository.isGenericDeviceLocationStoredLabel(t)) {
@@ -384,7 +376,6 @@ class HomeFragment : Fragment() {
     private fun updateWeatherUI(weather: com.example.ev.data.weather.WeatherData) {
         weatherContainer.isVisible = true
         weatherLoadingText.isVisible = false
-        // Сообщение об офлайне (кэш без сети) управляется weatherError
 
         weatherLocationText.text = when {
             useDeviceLocation -> resolvedWeatherPlaceLabel(weather.cityName)
@@ -394,7 +385,6 @@ class HomeFragment : Fragment() {
         }
         temperatureText.text = getString(R.string.temperature_format, weather.temperature.toInt())
 
-        // Исправляем deprecated capitalize()
         val condition = weather.description.lowercase().replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
         }
@@ -438,11 +428,11 @@ class HomeFragment : Fragment() {
                 getString(R.string.weather_city_mogilev)
             )
             val cityCoordinates = arrayOf(
-                53.9045 to 27.5615, // Minsk
-                52.0976 to 23.7341, // Brest
-                53.6694 to 23.8131, // Grodno
-                55.1904 to 30.2049, // Vitebsk
-                53.9006 to 30.3317  // Mogilev
+                53.9045 to 27.5615,
+                52.0976 to 23.7341,
+                53.6694 to 23.8131,
+                55.1904 to 30.2049,
+                53.9006 to 30.3317
             )
             val options = arrayOf(
                 getString(R.string.weather_city_current_location),
@@ -641,7 +631,6 @@ class HomeFragment : Fragment() {
             }
     }
 
-    /** Одноразовый «свежий» фикс (часто lastLocation пуст при холодном старте). */
     private fun requestFreshCurrentLocation(
         client: FusedLocationProviderClient,
         onSuccess: (Location) -> Unit,
@@ -661,7 +650,6 @@ class HomeFragment : Fragment() {
             }
     }
 
-    /** Резерв: подписка до первого фикса или таймаут (эмулятор / медленный GPS). */
     private fun requestSingleLocationUpdate(
         client: FusedLocationProviderClient,
         onSuccess: (Location) -> Unit,
@@ -763,9 +751,7 @@ class HomeFragment : Fragment() {
                 Toast.makeText(requireContext(), getString(R.string.scenario_updated), Toast.LENGTH_SHORT).show()
             }
 
-            override fun onScenarioDeleted(deletedScenario: Scenario) {
-                // Not used in edit flow
-            }
+            override fun onScenarioDeleted(deletedScenario: Scenario) {}
         })
         dialog.show(parentFragmentManager, "EditScenarioDialog")
     }

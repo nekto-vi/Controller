@@ -16,14 +16,10 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        // Read from local Gradle properties (prefer %USERPROFILE%/.gradle/gradle.properties).
-        // Never put ImageKit private key into Android project/BuildConfig.
         val imageKitPublicKey = providers.gradleProperty("IMAGEKIT_PUBLIC_KEY").orNull ?: ""
         val imageKitAuthEndpoint = providers.gradleProperty("IMAGEKIT_AUTH_ENDPOINT").orNull ?: ""
         buildConfigField("String", "IMAGEKIT_PUBLIC_KEY", "\"$imageKitPublicKey\"")
         buildConfigField("String", "IMAGEKIT_AUTH_ENDPOINT", "\"$imageKitAuthEndpoint\"")
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -82,12 +78,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-
-    implementation(libs.kotlinx.coroutines.android)
-
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
 
     implementation(libs.glide)
     implementation(libs.play.services.location)

@@ -15,17 +15,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-/**
- * Сценарии хранятся в Cloud Firestore: `users/{uid}/scenarios/{scenarioId}`.
- * Требуется вошедший пользователь (Firebase Auth: логин/пароль, логин маппится на синтетический email).
- *
- * [observeScenarios] подписывается на изменения коллекции в реальном времени (другой клиент, второе устройство).
- *
- * Один раз поднимает данные из старых SharedPreferences ("scenarios"), если облако пусто.
- *
- * Консоль Firebase: включить Authentication → Email/Password, Firestore → создать БД,
- * правила — см. [firestore.rules] в корне репозитория.
- */
 class ScenarioRepository(context: Context) {
 
     private val appContext = context.applicationContext
@@ -60,9 +49,6 @@ class ScenarioRepository(context: Context) {
         return list
     }
 
-    /**
-     * Поток списка сценариев; обновляется при любых изменениях в Firestore для текущего пользователя.
-     */
     fun observeScenarios(): Flow<List<Scenario>> = callbackFlow {
         val uid = auth.currentUser?.uid
         if (uid == null) {

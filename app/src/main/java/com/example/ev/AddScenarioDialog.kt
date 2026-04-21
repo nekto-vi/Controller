@@ -5,7 +5,6 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Point
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -32,7 +31,8 @@ class AddScenarioDialog : DialogFragment() {
     private val selectedRoomKeys = mutableListOf<String>()
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
-    private var selectedImageUri: Uri? = null
+    private var selectedImageRef: String? = null
+    private var selectedImageFileId: String? = null
     private var scheduleEnabled = false
     private var selectedHour = 9
     private var selectedMinute = 0
@@ -43,7 +43,8 @@ class AddScenarioDialog : DialogFragment() {
             runCatching {
                 requireContext().contentResolver.takePersistableUriPermission(uri, flags)
             }
-            selectedImageUri = uri
+            selectedImageRef = uri.toString()
+            selectedImageFileId = null
             updateImagePreview()
         }
 
@@ -147,7 +148,7 @@ class AddScenarioDialog : DialogFragment() {
 
         binding.scenarioImagePreview.setOnClickListener {
             val options = mutableListOf(getString(R.string.choose_image))
-            if (selectedImageUri != null) {
+            if (!selectedImageRef.isNullOrBlank()) {
                 options.add(getString(R.string.remove_image))
             }
             AlertDialog.Builder(requireContext())
@@ -156,7 +157,8 @@ class AddScenarioDialog : DialogFragment() {
                     when (which) {
                         0 -> pickImageLauncher.launch(arrayOf("image/*"))
                         1 -> {
-                            selectedImageUri = null
+                            selectedImageRef = null
+                            selectedImageFileId = null
                             updateImagePreview()
                         }
                     }
@@ -167,8 +169,8 @@ class AddScenarioDialog : DialogFragment() {
     }
 
     private fun updateImagePreview() {
-        val uri = selectedImageUri
-        if (uri == null) {
+        val imageRef = selectedImageRef
+        if (imageRef.isNullOrBlank()) {
             binding.scenarioImagePreview.setImageResource(android.R.drawable.ic_menu_gallery)
             return
         }
@@ -176,7 +178,7 @@ class AddScenarioDialog : DialogFragment() {
             .centerCrop()
             .placeholder(android.R.drawable.ic_menu_gallery)
             .error(android.R.drawable.ic_menu_gallery)
-        Glide.with(this).load(uri).apply(opts).into(binding.scenarioImagePreview)
+        Glide.with(this).load(imageRef).apply(opts).into(binding.scenarioImagePreview)
     }
 
     private fun setupScheduleControls() {
@@ -257,7 +259,8 @@ class AddScenarioDialog : DialogFragment() {
                         name = scenarioName,
                         rooms = selectedRoomKeys.toList(), // Save keys, not display names
                         temperature = currentTemperature,
-                        imageUri = selectedImageUri?.toString(),
+                        imageUrl = selectedImageRef,
+                        imageFileId = selectedImageFileId,
                         scheduleEnabled = scheduleEnabled,
                         startHour = selectedHour,
                         startMinute = selectedMinute

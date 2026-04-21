@@ -5,7 +5,6 @@ import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Point
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -33,7 +32,8 @@ class EditScenarioDialog : DialogFragment() {
     private val selectedRoomKeys = mutableListOf<String>()
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
-    private var selectedImageUri: Uri? = null
+    private var selectedImageRef: String? = null
+    private var selectedImageFileId: String? = null
     private var scheduleEnabled = false
     private var selectedHour = 9
     private var selectedMinute = 0
@@ -44,7 +44,8 @@ class EditScenarioDialog : DialogFragment() {
             runCatching {
                 requireContext().contentResolver.takePersistableUriPermission(uri, flags)
             }
-            selectedImageUri = uri
+            selectedImageRef = uri.toString()
+            selectedImageFileId = null
             updateImagePreview()
         }
 
@@ -94,7 +95,8 @@ class EditScenarioDialog : DialogFragment() {
         selectedRoomKeys.clear()
         selectedRoomKeys.addAll(scenario.rooms)
         currentTemperature = scenario.temperature
-        selectedImageUri = scenario.imageUri?.let { Uri.parse(it) }
+        selectedImageRef = scenario.imageUrl
+        selectedImageFileId = scenario.imageFileId
         scheduleEnabled = scenario.scheduleEnabled
         selectedHour = scenario.startHour
         selectedMinute = scenario.startMinute
@@ -165,7 +167,7 @@ class EditScenarioDialog : DialogFragment() {
 
         binding.scenarioImagePreview.setOnClickListener {
             val options = mutableListOf(getString(R.string.choose_image))
-            if (selectedImageUri != null) {
+            if (!selectedImageRef.isNullOrBlank()) {
                 options.add(getString(R.string.remove_image))
             }
             AlertDialog.Builder(requireContext())
@@ -174,7 +176,8 @@ class EditScenarioDialog : DialogFragment() {
                     when (which) {
                         0 -> pickImageLauncher.launch(arrayOf("image/*"))
                         1 -> {
-                            selectedImageUri = null
+                            selectedImageRef = null
+                            selectedImageFileId = null
                             updateImagePreview()
                         }
                     }
@@ -185,8 +188,8 @@ class EditScenarioDialog : DialogFragment() {
     }
 
     private fun updateImagePreview() {
-        val uri = selectedImageUri
-        if (uri == null) {
+        val imageRef = selectedImageRef
+        if (imageRef.isNullOrBlank()) {
             binding.scenarioImagePreview.setImageResource(android.R.drawable.ic_menu_gallery)
             return
         }
@@ -194,7 +197,7 @@ class EditScenarioDialog : DialogFragment() {
             .centerCrop()
             .placeholder(android.R.drawable.ic_menu_gallery)
             .error(android.R.drawable.ic_menu_gallery)
-        Glide.with(this).load(uri).apply(opts).into(binding.scenarioImagePreview)
+        Glide.with(this).load(imageRef).apply(opts).into(binding.scenarioImagePreview)
     }
 
     private fun setupScheduleControls() {
@@ -276,7 +279,8 @@ class EditScenarioDialog : DialogFragment() {
                         name = scenarioName,
                         rooms = selectedRoomKeys.toList(),
                         temperature = currentTemperature,
-                        imageUri = selectedImageUri?.toString(),
+                        imageUrl = selectedImageRef,
+                        imageFileId = selectedImageFileId,
                         scheduleEnabled = scheduleEnabled,
                         startHour = selectedHour,
                         startMinute = selectedMinute

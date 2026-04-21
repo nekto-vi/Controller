@@ -23,6 +23,7 @@ class ScenarioRepository(context: Context) {
     private val prefs: SharedPreferences = appContext.getSharedPreferences("scenarios", Context.MODE_PRIVATE)
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val imageKitService = ImageKitService(appContext)
 
     private suspend fun ensureSignedIn(): String {
         auth.currentUser?.let { user ->
@@ -56,12 +57,15 @@ class ScenarioRepository(context: Context) {
     }
 
     suspend fun saveScenario(scenario: Scenario) {
+        val prepared = prepareScenarioForUpload(scenario)
         val col = scenariosCollection()
-        col.document(scenario.id.toString()).set(scenario.toFirestoreMap()).await()
+        col.document(prepared.id.toString()).set(prepared.toFirestoreMap()).await()
     }
 
     suspend fun updateScenario(scenario: Scenario) {
-        saveScenario(scenario)
+        val prepared = prepareScenarioForUpload(scenario)
+        val col = scenariosCollection()
+        col.document(prepared.id.toString()).set(prepared.toFirestoreMap()).await()
     }
 
     suspend fun deleteScenario(scenarioId: Long) {
@@ -75,7 +79,9 @@ class ScenarioRepository(context: Context) {
             val name = prefs.getString("scenario_${id}_name", "") ?: ""
             val roomKeys = prefs.getStringSet("scenario_${id}_rooms", setOf())?.toList() ?: listOf()
             val temp = prefs.getInt("scenario_${id}_temp", 22)
-            val imageUri = prefs.getString("scenario_${id}_image_uri", null)
+            val imageUrl = prefs.getString("scenario_${id}_image_url", null)
+                ?: prefs.getString("scenario_${id}_image_uri", null)
+            val imageFileId = prefs.getString("scenario_${id}_image_file_id", null)
             val scheduleEnabled = prefs.getBoolean("scenario_${id}_schedule_enabled", false)
             val startHour = prefs.getInt("scenario_${id}_start_hour", 9)
             val startMinute = prefs.getInt("scenario_${id}_start_minute", 0)
@@ -86,7 +92,8 @@ class ScenarioRepository(context: Context) {
                         name = name,
                         rooms = roomKeys,
                         temperature = temp,
-                        imageUri = imageUri,
+                        imageUrl = imageUrl,
+                        imageFileId = imageFileId,
                         scheduleEnabled = scheduleEnabled,
                         startHour = startHour,
                         startMinute = startMinute
@@ -110,7 +117,9 @@ class ScenarioRepository(context: Context) {
             is Number -> t.toInt()
             else -> 22
         }
-        val imageUri = getString("imageUri")
+        val imageUrl = getString("imageUrl")
+            ?: getString("imageUri")
+        val imageFileId = getString("imageFileId")
         val scheduleEnabled = getBoolean("scheduleEnabled") ?: false
         val startHour = when (val h = get("startHour")) {
             is Number -> h.toInt()
@@ -125,7 +134,8 @@ class ScenarioRepository(context: Context) {
             name = name,
             rooms = rooms,
             temperature = temperature,
-            imageUri = imageUri?.takeIf { it.isNotBlank() },
+            imageUrl = imageUrl?.takeIf { it.isNotBlank() },
+            imageFileId = imageFileId?.takeIf { it.isNotBlank() },
             scheduleEnabled = scheduleEnabled,
             startHour = startHour,
             startMinute = startMinute
@@ -136,11 +146,24 @@ class ScenarioRepository(context: Context) {
         "name" to name,
         "rooms" to rooms,
         "temperature" to temperature,
-        "imageUri" to imageUri,
+        "imageUrl" to imageUrl,
+        "imageFileId" to imageFileId,
         "scheduleEnabled" to scheduleEnabled,
         "startHour" to startHour,
         "startMinute" to startMinute
     )
+
+    private suspend fun prepareScenarioForUpload(scenario: Scenario): Scenario {
+        val imageRef = scenario.imageUrl
+        if (imageRef.isNullOrBlank()) {
+            return scenario.copy(imageUrl = null, imageFileId = null)
+        }
+        if (imageRef.startsWith("http://") || imageRef.startsWith("https://")) {
+            return scenario
+        }
+        val uploaded = imageKitService.uploadScenarioImage(imageRef, scenario.id)
+        return scenario.copy(imageUrl = uploaded.url, imageFileId = uploaded.fileId)
+    }
 
     companion object {
         private const val COL_USERS = "users"

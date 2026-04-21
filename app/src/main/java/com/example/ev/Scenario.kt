@@ -9,7 +9,8 @@ data class Scenario(
     val name: String,
     val rooms: List<String>,
     val temperature: Int,
-    val imageUri: String? = null,
+    val imageUrl: String? = null,
+    val imageFileId: String? = null,
     val scheduleEnabled: Boolean = false,
     val startHour: Int = 9,
     val startMinute: Int = 0

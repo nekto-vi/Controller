@@ -34,6 +34,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".AuthActivity"
+            android:exported="false"
+            android:theme="@style/Theme.EV"
+            android:windowSoftInputMode="adjustResize" />
+
         <receiver
             android:name=".notifications.ScenarioActivationReceiver"
             android:exported="false" />

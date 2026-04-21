@@ -10,11 +10,11 @@ import kotlinx.coroutines.tasks.await
 
 /**
  * Сценарии хранятся в Cloud Firestore: `users/{uid}/scenarios/{scenarioId}`.
- * Перед записью выполняется анонимный вход Firebase Auth (uid стабилен для установки).
+ * Требуется вошедший пользователь (Firebase Auth: email/пароль, ник маппится на синтетический email).
  *
  * Один раз поднимает данные из старых SharedPreferences ("scenarios"), если облако пусто.
  *
- * Консоль Firebase: включить Authentication → Anonymous, Firestore → создать БД,
+ * Консоль Firebase: включить Authentication → Email/Password, Firestore → создать БД,
  * правила — см. [firestore.rules] в корне репозитория.
  */
 class ScenarioRepository(context: Context) {
@@ -26,12 +26,7 @@ class ScenarioRepository(context: Context) {
     private val imageKitService = ImageKitService(appContext)
 
     private suspend fun ensureSignedIn(): String {
-        auth.currentUser?.let { user ->
-            user.getIdToken(false).await()
-            return user.uid
-        }
-        val result = auth.signInAnonymously().await()
-        val user = result.user ?: error("Firebase anonymous sign-in failed")
+        val user = auth.currentUser ?: error("Not signed in")
         user.getIdToken(false).await()
         return user.uid
     }

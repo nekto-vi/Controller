@@ -9,7 +9,11 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
+import com.example.ev.auth.NicknameAuthMapper
+import com.google.android.material.button.MaterialButton
+import com.google.firebase.auth.FirebaseAuth
 
 class SettingsFragment : Fragment() {
 
@@ -23,8 +27,35 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupAccountSection(view)
         setupLanguageSection(view)
         setupThemeSection(view)
+    }
+
+    private fun setupAccountSection(view: View) {
+        val user = FirebaseAuth.getInstance().currentUser
+        val signedInAs = view.findViewById<TextView>(R.id.signedInAsText)
+        val logoutButton = view.findViewById<MaterialButton>(R.id.logoutButton)
+        if (user == null) {
+            signedInAs.text = getString(R.string.auth_signed_in_as, "?")
+            logoutButton.setOnClickListener {
+                openAuthAndFinish()
+            }
+            return
+        }
+        val nick = NicknameAuthMapper.displayNickname(user)
+        signedInAs.text = getString(R.string.auth_signed_in_as, nick)
+        logoutButton.setOnClickListener {
+            FirebaseAuth.getInstance().signOut()
+            openAuthAndFinish()
+        }
+    }
+
+    private fun openAuthAndFinish() {
+        val intent = Intent(requireContext(), AuthActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        requireActivity().finish()
     }
 
     private fun setupLanguageSection(view: View) {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.EV" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">#121212</item>
         <!-- Primary colors -->
         <item name="colorPrimary">@color/purple_200</item>
         <item name="colorPrimaryVariant">@color/purple_700</item>

@@ -6,11 +6,20 @@ import com.example.ev.Scenario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /**
  * Сценарии хранятся в Cloud Firestore: `users/{uid}/scenarios/{scenarioId}`.
  * Требуется вошедший пользователь (Firebase Auth: логин/пароль, логин маппится на синтетический email).
+ *
+ * [observeScenarios] подписывается на изменения коллекции в реальном времени (другой клиент, второе устройство).
  *
  * Один раз поднимает данные из старых SharedPreferences ("scenarios"), если облако пусто.
  *
@@ -49,6 +58,44 @@ class ScenarioRepository(context: Context) {
             }
         }
         return list
+    }
+
+    /**
+     * Поток списка сценариев; обновляется при любых изменениях в Firestore для текущего пользователя.
+     */
+    fun observeScenarios(): Flow<List<Scenario>> = callbackFlow {
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        val col = db.collection(COL_USERS).document(uid).collection(COL_SCENARIOS)
+        val registration = col.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            val snap = snapshot ?: return@addSnapshotListener
+            var list = snap.documents.mapNotNull { it.toScenario() }
+            if (list.isEmpty()) {
+                val legacy = loadLegacyFromPrefs()
+                if (legacy.isNotEmpty() && legacyMigrationScheduled.compareAndSet(false, true)) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            for (s in legacy) {
+                                col.document(s.id.toString()).set(s.toFirestoreMap()).await()
+                            }
+                            clearLegacyPrefs()
+                        } catch (_: Exception) {
+                            legacyMigrationScheduled.set(false)
+                        }
+                    }
+                }
+            }
+            trySend(list)
+        }
+        awaitClose { registration.remove() }
     }
 
     suspend fun saveScenario(scenario: Scenario) {
@@ -163,5 +210,6 @@ class ScenarioRepository(context: Context) {
     companion object {
         private const val COL_USERS = "users"
         private const val COL_SCENARIOS = "scenarios"
+        private val legacyMigrationScheduled = AtomicBoolean(false)
     }
 }

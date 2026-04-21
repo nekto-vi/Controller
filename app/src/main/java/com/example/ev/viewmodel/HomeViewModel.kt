@@ -9,6 +9,7 @@ import com.example.ev.data.ScenarioRepository
 import com.example.ev.data.WeatherRepository
 import com.example.ev.data.weather.WeatherData
 import com.example.ev.search.FuzzySearch
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 class HomeViewModel(
@@ -46,7 +47,14 @@ class HomeViewModel(
     val error: LiveData<String?> = _error
 
     init {
-        loadScenarios()
+        viewModelScope.launch {
+            repository.observeScenarios()
+                .catch { e -> _error.value = e.message }
+                .collect { list ->
+                    allScenarios = list
+                    applySearchFilterSort()
+                }
+        }
     }
 
     fun loadWeather(city: String = "Minsk") {
@@ -124,17 +132,6 @@ class HomeViewModel(
         }
     }
 
-    fun loadScenarios() {
-        viewModelScope.launch {
-            try {
-                allScenarios = repository.getAllScenarios()
-                applySearchFilterSort()
-            } catch (e: Exception) {
-                _error.value = e.message
-            }
-        }
-    }
-
     fun setSearchQuery(query: String) {
         searchQuery = query.trim()
         applySearchFilterSort()
@@ -169,7 +166,6 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 repository.saveScenario(scenario)
-                loadScenarios()
             } catch (e: Exception) {
                 _error.value = e.message
             }
@@ -180,7 +176,6 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 repository.updateScenario(scenario)
-                loadScenarios()
             } catch (e: Exception) {
                 _error.value = e.message
             }
@@ -191,7 +186,6 @@ class HomeViewModel(
         viewModelScope.launch {
             try {
                 repository.deleteScenario(scenarioId)
-                loadScenarios()
             } catch (e: Exception) {
                 _error.value = e.message
             }

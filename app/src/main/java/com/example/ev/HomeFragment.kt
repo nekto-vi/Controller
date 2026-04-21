@@ -494,6 +494,7 @@ class HomeFragment : Fragment() {
     private fun showEditScenarioDialog(scenario: Scenario) {
         val options = arrayOf(
             getString(R.string.edit),
+            getString(R.string.share),
             getString(R.string.delete),
             getString(R.string.cancel)
         )
@@ -503,7 +504,8 @@ class HomeFragment : Fragment() {
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> editScenario(scenario)
-                    1 -> deleteScenario(scenario)
+                    1 -> ScenarioShare.share(requireContext(), scenario)
+                    2 -> deleteScenario(scenario)
                 }
             }
             .show()

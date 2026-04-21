@@ -19,6 +19,12 @@
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
 
+    <string name="share">Share</string>
+    <string name="share_scenario_chooser_title">Share scenario</string>
+    <string name="share_text_rooms_line">Rooms: %s</string>
+    <string name="share_text_temperature_line">Temperature: %d°C</string>
+    <string name="share_text_schedule_line">Daily schedule at %1$02d:%2$02d</string>
+
     <string name="theme">Theme</string>
     <string name="light_theme">Light</string>
     <string name="dark_theme">Dark</string>
@@ -75,6 +81,8 @@
     <string name="scenario_image">Scenario image</string>
     <string name="scenario_image_preview">Scenario image preview</string>
     <string name="choose_image">Choose image</string>
+    <string name="scenario_take_photo">Take photo</string>
+    <string name="camera_permission_denied">Camera permission is required to take a photo</string>
     <string name="remove_image">Remove image</string>
     <string name="scenario_image_actions_title">Scenario photo</string>
     <string name="scenario_notification_channel_name">Scenario activations</string>

@@ -19,6 +19,12 @@
     <string name="edit">Редактировать</string>
     <string name="delete">Удалить</string>
 
+    <string name="share">Поделиться</string>
+    <string name="share_scenario_chooser_title">Поделиться сценарием</string>
+    <string name="share_text_rooms_line">Комнаты: %s</string>
+    <string name="share_text_temperature_line">Температура: %d°C</string>
+    <string name="share_text_schedule_line">Ежедневно в %1$02d:%2$02d</string>
+
     <string name="theme">Тема</string>
     <string name="light_theme">Светлая</string>
     <string name="dark_theme">Темная</string>
@@ -75,6 +81,8 @@
     <string name="scenario_image">Фото сценария</string>
     <string name="scenario_image_preview">Превью фото сценария</string>
     <string name="choose_image">Выбрать фото</string>
+    <string name="scenario_take_photo">Сделать фото</string>
+    <string name="camera_permission_denied">Нужно разрешение камеры, чтобы сделать фото</string>
     <string name="remove_image">Удалить фото</string>
     <string name="scenario_image_actions_title">Фото сценария</string>
     <string name="scenario_notification_channel_name">Активация сценариев</string>

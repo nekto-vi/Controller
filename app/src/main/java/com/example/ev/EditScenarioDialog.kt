@@ -1,10 +1,12 @@
 package com.example.ev
 
-import android.app.Dialog
+import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Point
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,6 +17,7 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
@@ -47,6 +50,32 @@ class EditScenarioDialog : DialogFragment() {
             selectedImageRef = uri.toString()
             selectedImageFileId = null
             updateImagePreview()
+        }
+
+    private var pendingCameraUri: Uri? = null
+
+    private val takePictureLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            val uri = pendingCameraUri
+            if (success && uri != null) {
+                selectedImageRef = uri.toString()
+                selectedImageFileId = null
+                updateImagePreview()
+            }
+            pendingCameraUri = null
+        }
+
+    private val requestCameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                launchCameraCapture()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.camera_permission_denied),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
     interface OnScenarioEditedListener {
@@ -166,7 +195,10 @@ class EditScenarioDialog : DialogFragment() {
         updateImagePreview()
 
         binding.scenarioImagePreview.setOnClickListener {
-            val options = mutableListOf(getString(R.string.choose_image))
+            val options = mutableListOf(
+                getString(R.string.choose_image),
+                getString(R.string.scenario_take_photo)
+            )
             if (!selectedImageRef.isNullOrBlank()) {
                 options.add(getString(R.string.remove_image))
             }
@@ -175,7 +207,8 @@ class EditScenarioDialog : DialogFragment() {
                 .setItems(options.toTypedArray()) { _, which ->
                     when (which) {
                         0 -> pickImageLauncher.launch(arrayOf("image/*"))
-                        1 -> {
+                        1 -> openCameraCapture()
+                        2 -> {
                             selectedImageRef = null
                             selectedImageFileId = null
                             updateImagePreview()
@@ -185,6 +218,21 @@ class EditScenarioDialog : DialogFragment() {
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
+    }
+
+    private fun openCameraCapture() {
+        val ctx = requireContext()
+        when {
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED -> launchCameraCapture()
+            else -> requestCameraPermission.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun launchCameraCapture() {
+        val uri = ScenarioImageCapture.createImageUri(requireContext())
+        pendingCameraUri = uri
+        takePictureLauncher.launch(uri)
     }
 
     private fun updateImagePreview() {

@@ -7,7 +7,8 @@ data class GeocodingResponse(
 )
 
 data class GeocodingResult(
-    val name: String,
+    val name: String?,
+    @SerializedName("admin1") val admin1: String?,
     val country: String?,
     val latitude: Double,
     val longitude: Double

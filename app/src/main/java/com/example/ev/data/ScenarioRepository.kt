@@ -6,15 +6,24 @@ import com.example.ev.Scenario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /**
  * Сценарии хранятся в Cloud Firestore: `users/{uid}/scenarios/{scenarioId}`.
- * Перед записью выполняется анонимный вход Firebase Auth (uid стабилен для установки).
+ * Требуется вошедший пользователь (Firebase Auth: логин/пароль, логин маппится на синтетический email).
+ *
+ * [observeScenarios] подписывается на изменения коллекции в реальном времени (другой клиент, второе устройство).
  *
  * Один раз поднимает данные из старых SharedPreferences ("scenarios"), если облако пусто.
  *
- * Консоль Firebase: включить Authentication → Anonymous, Firestore → создать БД,
+ * Консоль Firebase: включить Authentication → Email/Password, Firestore → создать БД,
  * правила — см. [firestore.rules] в корне репозитория.
  */
 class ScenarioRepository(context: Context) {
@@ -23,14 +32,10 @@ class ScenarioRepository(context: Context) {
     private val prefs: SharedPreferences = appContext.getSharedPreferences("scenarios", Context.MODE_PRIVATE)
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val imageKitService = ImageKitService(appContext)
 
     private suspend fun ensureSignedIn(): String {
-        auth.currentUser?.let { user ->
-            user.getIdToken(false).await()
-            return user.uid
-        }
-        val result = auth.signInAnonymously().await()
-        val user = result.user ?: error("Firebase anonymous sign-in failed")
+        val user = auth.currentUser ?: error("Not signed in")
         user.getIdToken(false).await()
         return user.uid
     }
@@ -55,13 +60,54 @@ class ScenarioRepository(context: Context) {
         return list
     }
 
+    /**
+     * Поток списка сценариев; обновляется при любых изменениях в Firestore для текущего пользователя.
+     */
+    fun observeScenarios(): Flow<List<Scenario>> = callbackFlow {
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        val col = db.collection(COL_USERS).document(uid).collection(COL_SCENARIOS)
+        val registration = col.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+            val snap = snapshot ?: return@addSnapshotListener
+            var list = snap.documents.mapNotNull { it.toScenario() }
+            if (list.isEmpty()) {
+                val legacy = loadLegacyFromPrefs()
+                if (legacy.isNotEmpty() && legacyMigrationScheduled.compareAndSet(false, true)) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            for (s in legacy) {
+                                col.document(s.id.toString()).set(s.toFirestoreMap()).await()
+                            }
+                            clearLegacyPrefs()
+                        } catch (_: Exception) {
+                            legacyMigrationScheduled.set(false)
+                        }
+                    }
+                }
+            }
+            trySend(list)
+        }
+        awaitClose { registration.remove() }
+    }
+
     suspend fun saveScenario(scenario: Scenario) {
+        val prepared = prepareScenarioForUpload(scenario)
         val col = scenariosCollection()
-        col.document(scenario.id.toString()).set(scenario.toFirestoreMap()).await()
+        col.document(prepared.id.toString()).set(prepared.toFirestoreMap()).await()
     }
 
     suspend fun updateScenario(scenario: Scenario) {
-        saveScenario(scenario)
+        val prepared = prepareScenarioForUpload(scenario)
+        val col = scenariosCollection()
+        col.document(prepared.id.toString()).set(prepared.toFirestoreMap()).await()
     }
 
     suspend fun deleteScenario(scenarioId: Long) {
@@ -75,7 +121,9 @@ class ScenarioRepository(context: Context) {
             val name = prefs.getString("scenario_${id}_name", "") ?: ""
             val roomKeys = prefs.getStringSet("scenario_${id}_rooms", setOf())?.toList() ?: listOf()
             val temp = prefs.getInt("scenario_${id}_temp", 22)
-            val imageUri = prefs.getString("scenario_${id}_image_uri", null)
+            val imageUrl = prefs.getString("scenario_${id}_image_url", null)
+                ?: prefs.getString("scenario_${id}_image_uri", null)
+            val imageFileId = prefs.getString("scenario_${id}_image_file_id", null)
             val scheduleEnabled = prefs.getBoolean("scenario_${id}_schedule_enabled", false)
             val startHour = prefs.getInt("scenario_${id}_start_hour", 9)
             val startMinute = prefs.getInt("scenario_${id}_start_minute", 0)
@@ -86,7 +134,8 @@ class ScenarioRepository(context: Context) {
                         name = name,
                         rooms = roomKeys,
                         temperature = temp,
-                        imageUri = imageUri,
+                        imageUrl = imageUrl,
+                        imageFileId = imageFileId,
                         scheduleEnabled = scheduleEnabled,
                         startHour = startHour,
                         startMinute = startMinute
@@ -110,7 +159,9 @@ class ScenarioRepository(context: Context) {
             is Number -> t.toInt()
             else -> 22
         }
-        val imageUri = getString("imageUri")
+        val imageUrl = getString("imageUrl")
+            ?: getString("imageUri")
+        val imageFileId = getString("imageFileId")
         val scheduleEnabled = getBoolean("scheduleEnabled") ?: false
         val startHour = when (val h = get("startHour")) {
             is Number -> h.toInt()
@@ -125,7 +176,8 @@ class ScenarioRepository(context: Context) {
             name = name,
             rooms = rooms,
             temperature = temperature,
-            imageUri = imageUri?.takeIf { it.isNotBlank() },
+            imageUrl = imageUrl?.takeIf { it.isNotBlank() },
+            imageFileId = imageFileId?.takeIf { it.isNotBlank() },
             scheduleEnabled = scheduleEnabled,
             startHour = startHour,
             startMinute = startMinute
@@ -136,14 +188,28 @@ class ScenarioRepository(context: Context) {
         "name" to name,
         "rooms" to rooms,
         "temperature" to temperature,
-        "imageUri" to imageUri,
+        "imageUrl" to imageUrl,
+        "imageFileId" to imageFileId,
         "scheduleEnabled" to scheduleEnabled,
         "startHour" to startHour,
         "startMinute" to startMinute
     )
 
+    private suspend fun prepareScenarioForUpload(scenario: Scenario): Scenario {
+        val imageRef = scenario.imageUrl
+        if (imageRef.isNullOrBlank()) {
+            return scenario.copy(imageUrl = null, imageFileId = null)
+        }
+        if (imageRef.startsWith("http://") || imageRef.startsWith("https://")) {
+            return scenario
+        }
+        val uploaded = imageKitService.uploadScenarioImage(imageRef, scenario.id)
+        return scenario.copy(imageUrl = uploaded.url, imageFileId = uploaded.fileId)
+    }
+
     companion object {
         private const val COL_USERS = "users"
         private const val COL_SCENARIOS = "scenarios"
+        private val legacyMigrationScheduled = AtomicBoolean(false)
     }
 }

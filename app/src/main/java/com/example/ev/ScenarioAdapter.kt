@@ -41,12 +41,12 @@ class ScenarioAdapter(
         }
 
         holder.detailsText.text = "${roomNames.joinToString()} - ${scenario.temperature}°C"
-        val imageUri = scenario.imageUri
-        if (imageUri.isNullOrBlank()) {
+        val imageUrl = scenario.imageUrl
+        if (imageUrl.isNullOrBlank()) {
             holder.imagePreview.setImageResource(android.R.drawable.ic_menu_gallery)
         } else {
             Glide.with(holder.itemView)
-                .load(imageUri)
+                .load(imageUrl)
                 .apply(imageOptions)
                 .into(holder.imagePreview)
         }

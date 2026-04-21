@@ -1,9 +1,10 @@
 package com.example.ev
 
-import android.app.Dialog
+import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Point
 import android.net.Uri
 import android.os.Build
@@ -16,6 +17,7 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
@@ -32,7 +34,8 @@ class AddScenarioDialog : DialogFragment() {
     private val selectedRoomKeys = mutableListOf<String>()
     private lateinit var roomAdapter: RoomAdapter
     private var currentTemperature = 22
-    private var selectedImageUri: Uri? = null
+    private var selectedImageRef: String? = null
+    private var selectedImageFileId: String? = null
     private var scheduleEnabled = false
     private var selectedHour = 9
     private var selectedMinute = 0
@@ -43,8 +46,35 @@ class AddScenarioDialog : DialogFragment() {
             runCatching {
                 requireContext().contentResolver.takePersistableUriPermission(uri, flags)
             }
-            selectedImageUri = uri
+            selectedImageRef = uri.toString()
+            selectedImageFileId = null
             updateImagePreview()
+        }
+
+    private var pendingCameraUri: Uri? = null
+
+    private val takePictureLauncher =
+        registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            val uri = pendingCameraUri
+            if (success && uri != null) {
+                selectedImageRef = uri.toString()
+                selectedImageFileId = null
+                updateImagePreview()
+            }
+            pendingCameraUri = null
+        }
+
+    private val requestCameraPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                launchCameraCapture()
+            } else {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.camera_permission_denied),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
 
     interface OnScenarioAddedListener {
@@ -146,8 +176,11 @@ class AddScenarioDialog : DialogFragment() {
         updateImagePreview()
 
         binding.scenarioImagePreview.setOnClickListener {
-            val options = mutableListOf(getString(R.string.choose_image))
-            if (selectedImageUri != null) {
+            val options = mutableListOf(
+                getString(R.string.choose_image),
+                getString(R.string.scenario_take_photo)
+            )
+            if (!selectedImageRef.isNullOrBlank()) {
                 options.add(getString(R.string.remove_image))
             }
             AlertDialog.Builder(requireContext())
@@ -155,8 +188,10 @@ class AddScenarioDialog : DialogFragment() {
                 .setItems(options.toTypedArray()) { _, which ->
                     when (which) {
                         0 -> pickImageLauncher.launch(arrayOf("image/*"))
-                        1 -> {
-                            selectedImageUri = null
+                        1 -> openCameraCapture()
+                        2 -> {
+                            selectedImageRef = null
+                            selectedImageFileId = null
                             updateImagePreview()
                         }
                     }
@@ -166,9 +201,24 @@ class AddScenarioDialog : DialogFragment() {
         }
     }
 
+    private fun openCameraCapture() {
+        val ctx = requireContext()
+        when {
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED -> launchCameraCapture()
+            else -> requestCameraPermission.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun launchCameraCapture() {
+        val uri = ScenarioImageCapture.createImageUri(requireContext())
+        pendingCameraUri = uri
+        takePictureLauncher.launch(uri)
+    }
+
     private fun updateImagePreview() {
-        val uri = selectedImageUri
-        if (uri == null) {
+        val imageRef = selectedImageRef
+        if (imageRef.isNullOrBlank()) {
             binding.scenarioImagePreview.setImageResource(android.R.drawable.ic_menu_gallery)
             return
         }
@@ -176,7 +226,7 @@ class AddScenarioDialog : DialogFragment() {
             .centerCrop()
             .placeholder(android.R.drawable.ic_menu_gallery)
             .error(android.R.drawable.ic_menu_gallery)
-        Glide.with(this).load(uri).apply(opts).into(binding.scenarioImagePreview)
+        Glide.with(this).load(imageRef).apply(opts).into(binding.scenarioImagePreview)
     }
 
     private fun setupScheduleControls() {
@@ -257,7 +307,8 @@ class AddScenarioDialog : DialogFragment() {
                         name = scenarioName,
                         rooms = selectedRoomKeys.toList(), // Save keys, not display names
                         temperature = currentTemperature,
-                        imageUri = selectedImageUri?.toString(),
+                        imageUrl = selectedImageRef,
+                        imageFileId = selectedImageFileId,
                         scheduleEnabled = scheduleEnabled,
                         startHour = selectedHour,
                         startMinute = selectedMinute

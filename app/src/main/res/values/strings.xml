@@ -19,6 +19,12 @@
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
 
+    <string name="share">Share</string>
+    <string name="share_scenario_chooser_title">Share scenario</string>
+    <string name="share_text_rooms_line">Rooms: %s</string>
+    <string name="share_text_temperature_line">Temperature: %d°C</string>
+    <string name="share_text_schedule_line">Daily schedule at %1$02d:%2$02d</string>
+
     <string name="theme">Theme</string>
     <string name="light_theme">Light</string>
     <string name="dark_theme">Dark</string>
@@ -75,6 +81,8 @@
     <string name="scenario_image">Scenario image</string>
     <string name="scenario_image_preview">Scenario image preview</string>
     <string name="choose_image">Choose image</string>
+    <string name="scenario_take_photo">Take photo</string>
+    <string name="camera_permission_denied">Camera permission is required to take a photo</string>
     <string name="remove_image">Remove image</string>
     <string name="scenario_image_actions_title">Scenario photo</string>
     <string name="scenario_notification_channel_name">Scenario activations</string>
@@ -115,4 +123,26 @@
     <string name="temp_plus">+</string>
     <string name="temp_minus_desc">Decrease temperature</string>
     <string name="temp_plus_desc">Increase temperature</string>
+
+    <string name="auth_title">Sign in to %1$s</string>
+    <string name="auth_register_title">Register in %1$s</string>
+    <string name="auth_switch_to_register">Need an account? Register</string>
+    <string name="auth_switch_to_login">Already have an account? Sign in</string>
+    <string name="auth_username_hint">Username</string>
+    <string name="auth_password_hint">Password</string>
+    <string name="auth_password_confirm_hint">Confirm password</string>
+    <string name="auth_login">Sign in</string>
+    <string name="auth_register">Register</string>
+    <string name="auth_account">Account</string>
+    <string name="auth_signed_in_as">Signed in as %s</string>
+    <string name="auth_logout">Sign out</string>
+    <string name="auth_username_empty">Enter your username</string>
+    <string name="auth_username_invalid">Invalid username</string>
+    <string name="auth_password_too_short">Password must be at least 6 characters</string>
+    <string name="auth_password_mismatch">Passwords do not match</string>
+    <string name="auth_error_generic">Something went wrong. Try again.</string>
+    <string name="auth_error_username_taken">This username is already taken</string>
+    <string name="auth_error_invalid_credentials">Wrong username or password</string>
+    <string name="auth_error_weak_password">Password is too weak</string>
+    <string name="auth_error_network">Network error. Check your connection.</string>
 </resources>

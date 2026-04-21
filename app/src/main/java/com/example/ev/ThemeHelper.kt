@@ -19,7 +19,6 @@ object ThemeHelper {
         return try {
             prefs.getString(PREF_THEME, THEME_SYSTEM) ?: THEME_SYSTEM
         } catch (e: ClassCastException) {
-            // Если раньше было сохранено число, очищаем и возвращаем default
             prefs.edit().remove(PREF_THEME).apply()
             THEME_SYSTEM
         }

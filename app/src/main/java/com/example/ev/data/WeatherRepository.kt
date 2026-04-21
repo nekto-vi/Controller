@@ -40,18 +40,15 @@ class WeatherRepository(private val context: Context) {
     private val geocodingApiService: GeocodingApiService = RetrofitClient.geocodingApiService
 
     companion object {
-        private const val CACHE_DURATION_MS = 30 * 60 * 1000 // 30 минут кэширования
+        private const val CACHE_DURATION_MS = 30 * 60 * 1000
         private const val DEFAULT_CITY = "Minsk"
 
-        /** Старые сборки писали это в кэш координат при сбое reverse-geocoding. */
         internal const val LEGACY_COORD_CITY_PLACEHOLDER = "Current location"
 
-        /** Старые сборки подставляли координаты вместо города (`%1$.2f°, %2$.2f°`). */
         private val LEGACY_COORD_NUMERIC_CITY_LABEL = Regex(
             "^-?\\d+\\.\\d+\\s*°\\s*,\\s*-?\\d+\\.\\d+\\s*°\\s*$"
         )
 
-        /** Подпись из кэша, которую не показываем как название места — обновляем с сервера или подменяем в UI. */
         internal fun isGenericDeviceLocationStoredLabel(cityName: String): Boolean {
             val t = cityName.trim()
             if (t.equals(LEGACY_COORD_CITY_PLACEHOLDER, ignoreCase = true)) return true
@@ -66,13 +63,11 @@ class WeatherRepository(private val context: Context) {
 
     fun getOfflineUserMessage(): String = offlineMessage()
 
-    /** Ключ кэша по названию города (поиск). */
     private fun cityCacheKey(city: String, language: String): String {
         val normalized = city.trim().lowercase(Locale.ROOT).replace("\\s+".toRegex(), " ")
         return "city|$normalized|$language"
     }
 
-    /** Ключ кэша по координатам (быстрый выбор города). */
     private fun coordCacheKey(latitude: Double, longitude: Double, language: String): String =
         String.format(Locale.US, "coord|%.4f|%.4f|%s", latitude, longitude, language)
 

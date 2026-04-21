@@ -305,7 +305,7 @@ class AddScenarioDialog : DialogFragment() {
                 else -> {
                     val scenario = Scenario(
                         name = scenarioName,
-                        rooms = selectedRoomKeys.toList(), // Save keys, not display names
+                        rooms = selectedRoomKeys.toList(),
                         temperature = currentTemperature,
                         imageUrl = selectedImageRef,
                         imageFileId = selectedImageFileId,

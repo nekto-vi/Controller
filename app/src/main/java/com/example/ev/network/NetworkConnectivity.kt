@@ -5,9 +5,6 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 
-/**
- * Проверка доступности сети (интернет).
- */
 object NetworkConnectivity {
 
     fun isNetworkAvailable(context: Context): Boolean {

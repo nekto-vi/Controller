@@ -15,7 +15,6 @@ import com.example.ev.Scenario
 import java.util.Calendar
 
 object ScenarioScheduleManager {
-    // Use v2 channel id so updated importance reliably applies.
     const val CHANNEL_ID = "scenario_activation_channel_v2"
     const val EXTRA_SCENARIO_ID = "extra_scenario_id"
     const val EXTRA_SCENARIO_NAME = "extra_scenario_name"
@@ -53,7 +52,6 @@ object ScenarioScheduleManager {
                 )
             }
         } catch (_: SecurityException) {
-            // Fallback when exact alarms are not allowed by system policy.
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         }
     }

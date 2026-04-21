@@ -58,7 +58,6 @@ class ScenarioActivationReceiver : BroadcastReceiver() {
                 .notify(ScenarioScheduleManager.requestCodeForScenario(scenarioId), notification)
         }
 
-        // Re-schedule for the next day.
         ScenarioScheduleManager.scheduleScenario(
             context,
             Scenario(

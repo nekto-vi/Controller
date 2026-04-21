@@ -13,11 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
-
-# Firebase / Google Services — ключи и id приложения; держите локально, не пушьте в публичный Git
 app/google-services.json
-
-# Local secrets/config (ImageKit, Firebase, keystores)
 secrets.properties
 gradle.properties.local
 .env

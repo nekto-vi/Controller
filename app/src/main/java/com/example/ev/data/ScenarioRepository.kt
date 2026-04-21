@@ -10,7 +10,7 @@ import kotlinx.coroutines.tasks.await
 
 /**
  * Сценарии хранятся в Cloud Firestore: `users/{uid}/scenarios/{scenarioId}`.
- * Требуется вошедший пользователь (Firebase Auth: email/пароль, ник маппится на синтетический email).
+ * Требуется вошедший пользователь (Firebase Auth: логин/пароль, логин маппится на синтетический email).
  *
  * Один раз поднимает данные из старых SharedPreferences ("scenarios"), если облако пусто.
  *

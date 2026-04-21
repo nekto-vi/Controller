@@ -18,10 +18,10 @@ object NicknameAuthMapper {
     fun parse(raw: String): NicknameParseResult {
         val trimmed = raw.trim()
         if (trimmed.isEmpty()) {
-            return NicknameParseResult.Error(R.string.auth_nickname_empty)
+            return NicknameParseResult.Error(R.string.auth_username_empty)
         }
         if (!nickPattern.matches(trimmed)) {
-            return NicknameParseResult.Error(R.string.auth_nickname_invalid)
+            return NicknameParseResult.Error(R.string.auth_username_invalid)
         }
         val normalized = trimmed.lowercase()
         return NicknameParseResult.Ok(normalized = normalized, displayNickname = trimmed)

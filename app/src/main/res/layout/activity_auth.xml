@@ -10,29 +10,18 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/authTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="48dp"
-            android:text="@string/auth_title"
             android:textColor="?attr/colorOnSurface"
             android:textSize="24sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/authNicknameNote"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
-            android:text="@string/auth_nickname_note"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="13sp" />
+            android:textStyle="bold"
+            tools:text="Sign in to Controller" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/nicknameLayout"
@@ -40,7 +29,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:hint="@string/auth_nickname_hint">
+            android:hint="@string/auth_username_hint">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/nicknameInput"
@@ -122,6 +111,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="8dp" />
     </LinearLayout>
 </ScrollView>

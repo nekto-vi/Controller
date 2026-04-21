@@ -116,26 +116,25 @@
     <string name="temp_minus_desc">Decrease temperature</string>
     <string name="temp_plus_desc">Increase temperature</string>
 
-    <string name="auth_title">Sign in</string>
-    <string name="auth_register_title">Create account</string>
+    <string name="auth_title">Sign in to %1$s</string>
+    <string name="auth_register_title">Register in %1$s</string>
     <string name="auth_switch_to_register">Need an account? Register</string>
     <string name="auth_switch_to_login">Already have an account? Sign in</string>
-    <string name="auth_nickname_hint">Nickname</string>
+    <string name="auth_username_hint">Username</string>
     <string name="auth_password_hint">Password</string>
     <string name="auth_password_confirm_hint">Confirm password</string>
     <string name="auth_login">Sign in</string>
     <string name="auth_register">Register</string>
-    <string name="auth_nickname_note">3–20 characters: letters, digits, underscore</string>
     <string name="auth_account">Account</string>
     <string name="auth_signed_in_as">Signed in as %s</string>
     <string name="auth_logout">Sign out</string>
-    <string name="auth_nickname_empty">Enter a nickname</string>
-    <string name="auth_nickname_invalid">Use 3–20 Latin letters, digits, or underscore</string>
+    <string name="auth_username_empty">Enter your username</string>
+    <string name="auth_username_invalid">Invalid username</string>
     <string name="auth_password_too_short">Password must be at least 6 characters</string>
     <string name="auth_password_mismatch">Passwords do not match</string>
     <string name="auth_error_generic">Something went wrong. Try again.</string>
-    <string name="auth_error_nickname_taken">This nickname is already taken</string>
-    <string name="auth_error_invalid_credentials">Wrong nickname or password</string>
+    <string name="auth_error_username_taken">This username is already taken</string>
+    <string name="auth_error_invalid_credentials">Wrong username or password</string>
     <string name="auth_error_weak_password">Password is too weak</string>
     <string name="auth_error_network">Network error. Check your connection.</string>
 </resources>

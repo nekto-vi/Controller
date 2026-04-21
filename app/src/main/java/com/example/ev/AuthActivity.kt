@@ -75,7 +75,11 @@ class AuthActivity : AppCompatActivity() {
     }
 
     private fun updateModeUi() {
-        authTitle.setText(if (registerMode) R.string.auth_register_title else R.string.auth_title)
+        val app = getString(R.string.app_name)
+        authTitle.text = getString(
+            if (registerMode) R.string.auth_register_title else R.string.auth_title,
+            app
+        )
         passwordConfirmLayout.visibility = if (registerMode) View.VISIBLE else View.GONE
         loginButton.visibility = if (registerMode) View.GONE else View.VISIBLE
         registerButton.visibility = if (registerMode) View.VISIBLE else View.GONE
@@ -153,8 +157,8 @@ class AuthActivity : AppCompatActivity() {
     private fun mapAuthMessage(e: Exception): String {
         if (e is FirebaseAuthException) {
             return when (e.errorCode) {
-                "ERROR_EMAIL_ALREADY_IN_USE" -> getString(R.string.auth_error_nickname_taken)
-                "ERROR_INVALID_EMAIL" -> getString(R.string.auth_nickname_invalid)
+                "ERROR_EMAIL_ALREADY_IN_USE" -> getString(R.string.auth_error_username_taken)
+                "ERROR_INVALID_EMAIL" -> getString(R.string.auth_username_invalid)
                 "ERROR_WRONG_PASSWORD",
                 "ERROR_INVALID_CREDENTIAL",
                 "ERROR_USER_NOT_FOUND",
